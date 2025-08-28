@@ -28,9 +28,10 @@ void missionCountPack(mavlink_message_t &msg, int count)
     mavlink_msg_mission_count_encode(255, MAV_COMP_ID_ONBOARD_COMPUTER, &msg, &m_count);
 }
 
-void missionWPTPack(mavlink_mission_item_t &wp, WGS84Coord coord, int seq)
+void missionWPTPack(mavlink_mission_item_int_t &wp, WGS84Coord coord, int seq)
 {
     memset(&wp, 0, sizeof(wp));
+    wp.current = 0;
     wp.target_system = 1,
     wp.target_component = 1,
     wp.seq = seq;
@@ -55,17 +56,33 @@ void Do_SetWayPoints(InterfaceUDP &sitl, WGS84Coord* coords, int count)
 {
     mavlink_message_t msg;
 
-    missionCountPack(msg, count);
+    //missionCountPack(msg, count);
+    //sendMavlinkMessage(sitl, msg);
+
+    mavlink_msg_mission_count_pack(255, MAV_COMP_ID_ONBOARD_COMPUTER, &msg,
+                                  1, 1,
+                                  1, 0);
     sendMavlinkMessage(sitl, msg);
+    usleep(1000*100);
 
     for (int i = 0; i < count; ++i)
     {
-        mavlink_mission_item_t wp;
-
+        mavlink_mission_item_int_t wp;
         missionWPTPack(wp, coords[i], i);
-        mavlink_msg_mission_item_encode(255, MAV_COMP_ID_ONBOARD_COMPUTER, &msg, &wp);
+
+        mavlink_msg_mission_item_int_encode(255, MAV_COMP_ID_ONBOARD_COMPUTER, &msg, &wp);
         sendMavlinkMessage(sitl, msg);
+        usleep(1000*100);
     }
+
+
+    mavlink_msg_mission_set_current_pack(255, MAV_COMP_ID_ONBOARD_COMPUTER, &msg, 1, 1, 0);
+    sendMavlinkMessage(sitl, msg);
+    usleep(1000*100);
+    
+    mavlink_msg_mission_request_list_pack(255, MAV_COMP_ID_ONBOARD_COMPUTER, &msg, 1, 1, 0);
+    sendMavlinkMessage(sitl, msg);
+    usleep(1000*100);
 } 
 
 void waitHeartBeat(InterfaceUDP &sitl)
@@ -118,7 +135,9 @@ int main()
 
             std::cout << lastReceivedData.getCoords()[0].lat << std::endl;
         }
-        usleep(3*1000*1000);
+
+        //return 0;
+        usleep(1*1000*1000);
     }
 
     return 0;
