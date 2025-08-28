@@ -23,7 +23,13 @@ InterfaceUDP::~InterfaceUDP()
 
 int InterfaceUDP::sendTo(uint8_t buffer[], uint16_t len)
 {
-    sendto(handler, &buffer, len, 0, (sockaddr*)&sent_addr, sizeof(sent_addr));
+    sendto(handler, buffer, len, 0, (sockaddr*)&sent_addr, sizeof(sent_addr));
+}
+
+ssize_t InterfaceUDP::recvFrom(uint8_t buffer[], uint16_t len)
+{
+    socklen_t sent_len = sizeof(sent_addr);
+    return recvfrom(handler, buffer, len, 0, (sockaddr*)&sent_addr, &sent_len);
 }
 
 void InterfaceUDP::sendFlyPlaneData(FlyPlaneData& data)
@@ -41,8 +47,8 @@ int InterfaceUDP::readFlyPlaneData(FlyPlaneData &data, int timeoutMs)
     const int BUFFER_SIZE = 2048*16;
     unsigned char buffer[BUFFER_SIZE];
 
-    socklen_t recv_len = sizeof(recv_addr);
-    ssize_t bytesReceived = recvfrom(handler, buffer, BUFFER_SIZE, 0, (sockaddr*)&recv_addr, &recv_len);
+    socklen_t len = sizeof(sent_addr);
+    ssize_t bytesReceived = recvfrom(handler, buffer, BUFFER_SIZE, 0, (sockaddr*)&sent_addr, &len);
     
     if (bytesReceived > 0) 
     {
