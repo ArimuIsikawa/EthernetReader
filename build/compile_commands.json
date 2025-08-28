@@ -1,0 +1,17 @@
+[
+{
+  "directory": "/home/centerbla/Desktop/EthernetReader/build",
+  "command": "/usr/lib/ccache/c++  -I/home/centerbla/Desktop/EthernetReader/src/FlyPlaneData -I/home/centerbla/Desktop/EthernetReader/src/InterfaceUDP -g   -w -std=gnu++17 -o CMakeFiles/EthernetReader.dir/main.cpp.o -c /home/centerbla/Desktop/EthernetReader/main.cpp",
+  "file": "/home/centerbla/Desktop/EthernetReader/main.cpp"
+},
+{
+  "directory": "/home/centerbla/Desktop/EthernetReader/build",
+  "command": "/usr/lib/ccache/c++  -I/home/centerbla/Desktop/EthernetReader/src/FlyPlaneData -I/home/centerbla/Desktop/EthernetReader/src/InterfaceUDP -g   -w -std=gnu++17 -o CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.o -c /home/centerbla/Desktop/EthernetReader/src/FlyPlaneData/FlyPlaneData.cpp",
+  "file": "/home/centerbla/Desktop/EthernetReader/src/FlyPlaneData/FlyPlaneData.cpp"
+},
+{
+  "directory": "/home/centerbla/Desktop/EthernetReader/build",
+  "command": "/usr/lib/ccache/c++  -I/home/centerbla/Desktop/EthernetReader/src/FlyPlaneData -I/home/centerbla/Desktop/EthernetReader/src/InterfaceUDP -g   -w -std=gnu++17 -o CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.o -c /home/centerbla/Desktop/EthernetReader/src/InterfaceUDP/InterfaceUDP.cpp",
+  "file": "/home/centerbla/Desktop/EthernetReader/src/InterfaceUDP/InterfaceUDP.cpp"
+}
+]
