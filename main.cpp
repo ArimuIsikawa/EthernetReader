@@ -7,8 +7,8 @@
 #include "Mavlink_Lib/common/mavlink.h"
 #include "Mavlink_Lib/ardupilotmega/ardupilotmega.h"
 
-#define MAIN_IP         "127.0.0.1"
-#define MAIN_PORT       14534
+#define MAIN_IP         "196.10.10.140"
+#define MAIN_PORT       14597
 
 #define SITL_IP         "127.0.0.1"
 #define SITL_PORT       14557
@@ -109,25 +109,16 @@ void waitHeartBeat(InterfaceUDP &sitl)
 
 int main() 
 {
-
-    FlyPlaneData data;
-    data.setCoords(new WGS84Coord(56.092952, 35.871884, 159.21), 1);
-
     InterfaceUDP UDPData(MAIN_IP, MAIN_PORT);
     InterfaceUDP UDPSitl(SITL_IP, SITL_PORT);
 
     FlyPlaneData lastReceivedData;
-    FlyPlaneData lastSendedData;
 
     waitHeartBeat(UDPSitl);
 
     while (true)
     {
-        UDPData.sendFlyPlaneData(data);
-
         int length = UDPData.readFlyPlaneData(lastReceivedData);
-
-        ssize_t n = UDPSitl.recvFrom(buf, sizeof(buf));
 
         if (length > 0)
         {
@@ -136,8 +127,7 @@ int main()
             std::cout << lastReceivedData.getCoords()[0].lat << std::endl;
         }
 
-        //return 0;
-        usleep(1*1000*1000);
+        usleep(1*100*1000);
     }
 
     return 0;

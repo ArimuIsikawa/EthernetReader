@@ -37,7 +37,7 @@ void InterfaceUDP::sendFlyPlaneData(FlyPlaneData& data)
     unsigned char* serializedData = data.Serialization();
     int dataSize = data.getSerializedSize();
 
-    sendto(handler, serializedData, dataSize, 0, (sockaddr*)&sent_addr, sizeof(sent_addr));
+    sendTo(serializedData, dataSize);
     
     delete[] serializedData;
 }
@@ -48,7 +48,7 @@ int InterfaceUDP::readFlyPlaneData(FlyPlaneData &data, int timeoutMs)
     unsigned char buffer[BUFFER_SIZE];
 
     socklen_t len = sizeof(sent_addr);
-    ssize_t bytesReceived = recvfrom(handler, buffer, BUFFER_SIZE, 0, (sockaddr*)&sent_addr, &len);
+    ssize_t bytesReceived = recvFrom(buffer, sizeof(buffer));
     
     if (bytesReceived > 0) 
     {

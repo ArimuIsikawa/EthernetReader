@@ -20,6 +20,7 @@ set(SOURCES
 set(HEADERS
     src/FlyPlaneData/FlyPlaneData.h
     src/InterfaceUDP/InterfaceUDP.h
+    test.h
 )
 
 
