@@ -4,7 +4,7 @@
 # compile CXX with /usr/lib/ccache/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/centerbla/Desktop/EthernetReader/src/FlyPlaneData -I/home/centerbla/Desktop/EthernetReader/src/InterfaceUDP
+CXX_INCLUDES = -I/home/centerbla/Desktop/EthernetReader/src/FlyPlaneData -I/home/centerbla/Desktop/EthernetReader/src/InterfaceUDP -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/common -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/ardupilotmega
 
 CXX_FLAGS = -g   -w -std=gnu++17
 

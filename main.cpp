@@ -5,13 +5,16 @@
 #include "InterfaceUDP.h"
 
 #include "Mavlink_Lib/common/mavlink.h"
-#include "Mavlink_Lib/ardupilotmega/ardupilotmega.h"
 
-#define MAIN_IP         "196.10.10.140"
+#ifdef MAVLINK_H
+    //#include "Mavlink_Lib/ardupilotmega/ardupilotmega.h"
+#endif
+
+#define MAIN_IP         "196.10.10.135"
 #define MAIN_PORT       14597
 
-#define SITL_IP         "127.0.0.1"
-#define SITL_PORT       14557
+#define MAVLINK_IP         "0.0.0.0"
+#define MAVLINK_PORT       14557
 
 mavlink_message_t msg;
 mavlink_status_t status;
@@ -28,20 +31,19 @@ void missionCountPack(mavlink_message_t &msg, int count)
     mavlink_msg_mission_count_encode(255, MAV_COMP_ID_ONBOARD_COMPUTER, &msg, &m_count);
 }
 
-void missionWPTPack(mavlink_mission_item_int_t &wp, WGS84Coord coord, int seq)
+void missionWPTPack(mavlink_mission_item_t &wp, WGS84Coord coord, int seq)
 {
-    memset(&wp, 0, sizeof(wp));
-    wp.current = 0;
     wp.target_system = 1,
     wp.target_component = 1,
     wp.seq = seq;
     wp.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
-    wp.command = MAV_CMD_NAV_WAYPOINT;
+    wp.command = 16;  //MAV_CMD_NAV_WAYPOINT
+    wp.current = 0;
+    wp.autocontinue = 1;
     wp.x = coord.lat;  // latitude
     wp.y = coord.lon;  // longitude
     wp.z = coord.alt;  // altitude
     wp.mission_type = MAV_MISSION_TYPE_MISSION;
-    wp.autocontinue = 1;
 }
 
 void sendMavlinkMessage(InterfaceUDP &sitl, const mavlink_message_t& msg)
@@ -56,33 +58,70 @@ void Do_SetWayPoints(InterfaceUDP &sitl, WGS84Coord* coords, int count)
 {
     mavlink_message_t msg;
 
-    //missionCountPack(msg, count);
-    //sendMavlinkMessage(sitl, msg);
+    count += 1;
 
-    mavlink_msg_mission_count_pack(255, MAV_COMP_ID_ONBOARD_COMPUTER, &msg,
-                                  1, 1,
-                                  1, 0);
+    mavlink_msg_mission_count_pack(255, MAV_COMP_ID_ONBOARD_COMPUTER, &msg, 1, 1, count, MAV_MISSION_TYPE_MISSION);
     sendMavlinkMessage(sitl, msg);
-    usleep(1000*100);
 
-    for (int i = 0; i < count; ++i)
+    int pointI = 0;
+    bool finished = false;
+
+    while ((!(pointI < count - 1) && (finished == true)) == false)
     {
-        mavlink_mission_item_int_t wp;
-        missionWPTPack(wp, coords[i], i);
+        ssize_t n = sitl.recvFrom(buf, sizeof(buf));
+        if (n <= 0)
+            continue;
 
-        mavlink_msg_mission_item_int_encode(255, MAV_COMP_ID_ONBOARD_COMPUTER, &msg, &wp);
-        sendMavlinkMessage(sitl, msg);
-        usleep(1000*100);
+        for (ssize_t i = 0; i < n; ++i) 
+        {
+            if (mavlink_parse_char(MAVLINK_COMM_0, buf[i], &msg, &status)) 
+            {
+                switch (msg.msgid)
+                {
+                case MAVLINK_MSG_ID_MISSION_REQUEST: {
+                    mavlink_mission_request_int_t req;
+                    mavlink_msg_mission_request_int_decode(&msg, &req);
+                    uint16_t seq = req.seq;
+
+                    std::cout << seq << std::endl;
+
+                    mavlink_mission_item_t wp;
+
+                    if (seq == 0)
+                    {
+                        missionWPTPack(wp, coords[pointI], pointI);
+                        mavlink_msg_mission_item_encode(255, 191, &msg, &wp);
+                        sendMavlinkMessage(sitl, msg);
+                        std::cout << "Sent MISSION_ITEM_INT seq=" << pointI << std::endl;
+                        break;
+                    }
+
+                    missionWPTPack(wp, coords[pointI], pointI + 1);
+                    mavlink_msg_mission_item_encode(255, 191, &msg, &wp);
+                    sendMavlinkMessage(sitl, msg);
+                    std::cout << "Sent MISSION_ITEM_INT seq=" << pointI + 1 << std::endl;
+                    pointI += 1;
+                    break;
+                }
+                case MAVLINK_MSG_ID_MISSION_ACK: {
+                    mavlink_mission_ack_t ack;
+                    mavlink_msg_mission_ack_decode(&msg, &ack);
+                    std::cout << "Received MISSION_ACK: type=" << static_cast<int>(ack.type) << std::endl;
+
+                    if (ack.type == MAV_MISSION_ACCEPTED)
+                        std::cout << "Mission uploaded successfully (ACCEPTED)." << std::endl;
+                    else
+                        std::cerr << "Mission not accepted, type=" << static_cast<int>(ack.type) << std::endl;
+                    finished = true;
+
+                    break;
+                }
+                default:
+                    break;
+                }
+            }
+        }
     }
-
-
-    mavlink_msg_mission_set_current_pack(255, MAV_COMP_ID_ONBOARD_COMPUTER, &msg, 1, 1, 0);
-    sendMavlinkMessage(sitl, msg);
-    usleep(1000*100);
-    
-    mavlink_msg_mission_request_list_pack(255, MAV_COMP_ID_ONBOARD_COMPUTER, &msg, 1, 1, 0);
-    sendMavlinkMessage(sitl, msg);
-    usleep(1000*100);
 } 
 
 void waitHeartBeat(InterfaceUDP &sitl)
@@ -107,10 +146,35 @@ void waitHeartBeat(InterfaceUDP &sitl)
     }
 }
 
+int sendData()
+{
+    InterfaceUDP UDPData("127.0.0.1", MAIN_PORT);
+    FlyPlaneData Data;
+    FlyPlaneData recvData;
+
+    Data.setCoords(new WGS84Coord(56.123, 37.123, 150), 1);
+
+    while (true)
+    {
+        UDPData.sendFlyPlaneData(Data);
+        int length = UDPData.readFlyPlaneData(recvData);
+
+        std::cout << recvData.getCoords()[0].lat << std::endl;
+        std::cout << recvData.getCoords()[0].lon << std::endl;
+        std::cout << recvData.getCoords()[0].alt << std::endl;
+
+        usleep(1*1000*1000);
+    }
+}
+
 int main() 
 {
+    sendData();
+
+    return 0;
+
     InterfaceUDP UDPData(MAIN_IP, MAIN_PORT);
-    InterfaceUDP UDPSitl(SITL_IP, SITL_PORT);
+    InterfaceUDP UDPSitl(MAVLINK_IP, MAVLINK_PORT);
 
     FlyPlaneData lastReceivedData;
 
@@ -121,11 +185,7 @@ int main()
         int length = UDPData.readFlyPlaneData(lastReceivedData);
 
         if (length > 0)
-        {
             Do_SetWayPoints(UDPSitl, lastReceivedData.getCoords(), lastReceivedData.getPointCount());
-
-            std::cout << lastReceivedData.getCoords()[0].lat << std::endl;
-        }
 
         usleep(1*100*1000);
     }

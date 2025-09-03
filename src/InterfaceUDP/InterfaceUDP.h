@@ -1,3 +1,6 @@
+#ifndef INTERFACE_UDP_H
+#define INTERFACE_UDP_H
+
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -23,3 +26,5 @@ public:
 	void sendFlyPlaneData(FlyPlaneData& data);
 	int readFlyPlaneData(FlyPlaneData& data, int timeoutMs = 1000);
 };
+
+#endif

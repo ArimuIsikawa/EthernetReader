@@ -10,6 +10,8 @@ add_definitions(-w)
 include_directories(
     src/FlyPlaneData/
     src/InterfaceUDP/
+    Mavlink_Lib/common/
+Mavlink_Lib/ardupilotmega/
 )
 
 set(SOURCES
@@ -20,9 +22,9 @@ set(SOURCES
 set(HEADERS
     src/FlyPlaneData/FlyPlaneData.h
     src/InterfaceUDP/InterfaceUDP.h
-    test.h
+    Mavlink_Lib/common/mavlink.h
+    Mavlink_Lib/ardupilotmega/ardupilotmega.h
 )
 
 
-add_executable(${PROJECT_NAME}  "main.cpp" 
-            ${SOURCES} ${HEADERS} ${PROTO_SRC} ${PROTO_HDRS})
+add_executable(${PROJECT_NAME} "main.cpp" ${SOURCES} ${HEADERS})
