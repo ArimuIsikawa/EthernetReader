@@ -148,28 +148,23 @@ void waitHeartBeat(InterfaceUDP &sitl)
 
 int sendData()
 {
-    InterfaceUDP UDPData("127.0.0.1", MAIN_PORT);
+    InterfaceUDP UDPData(MAIN_IP, MAIN_PORT);
     FlyPlaneData Data;
-    FlyPlaneData recvData;
 
-    Data.setCoords(new WGS84Coord(56.123, 37.123, 150), 1);
+    Data.setCoords(new WGS84Coord(55.123, 37.123, 150), 1);
 
     while (true)
     {
         UDPData.sendFlyPlaneData(Data);
-        int length = UDPData.readFlyPlaneData(recvData);
 
-        std::cout << recvData.getCoords()[0].lat << std::endl;
-        std::cout << recvData.getCoords()[0].lon << std::endl;
-        std::cout << recvData.getCoords()[0].alt << std::endl;
-
-        usleep(1*1000*1000);
+        usleep(10*1000*1000);
     }
 }
 
 int main() 
 {
     sendData();
+    //TCPTest();
 
     return 0;
 

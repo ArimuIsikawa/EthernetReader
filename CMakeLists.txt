@@ -10,21 +10,23 @@ add_definitions(-w)
 include_directories(
     src/FlyPlaneData/
     src/InterfaceUDP/
+    #src/InterfaceTCP/
     Mavlink_Lib/common/
-Mavlink_Lib/ardupilotmega/
+    Mavlink_Lib/ardupilotmega/
 )
 
 set(SOURCES
     src/FlyPlaneData/FlyPlaneData.cpp
     src/InterfaceUDP/InterfaceUDP.cpp
+    #src/InterfaceTCP/InterfaceTCP.cpp
 )
 
 set(HEADERS
     src/FlyPlaneData/FlyPlaneData.h
     src/InterfaceUDP/InterfaceUDP.h
+    #src/InterfaceTCP/InterfaceTCP.h
     Mavlink_Lib/common/mavlink.h
     Mavlink_Lib/ardupilotmega/ardupilotmega.h
 )
-
 
 add_executable(${PROJECT_NAME} "main.cpp" ${SOURCES} ${HEADERS})
