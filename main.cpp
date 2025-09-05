@@ -151,7 +151,14 @@ int sendData()
 {
     InterfaceTCPClient InetData(TEST_IP, TEST_PORT);
     FlyPlaneData Data;
-    Data.setCoords(new WGS84Coord(57, 36, 150), 1);
+    auto tmp = new WGS84Coord[3]{
+        WGS84Coord(1.0f, 2.0f, 3.0f),
+        WGS84Coord(4.0f, 5.0f, 6.0f),
+        WGS84Coord(7.0f, 8.0f, 9.0f)
+    };
+
+    Data.setCoords(tmp, 3);
+    Data.setImage(new unsigned char[9]{1,2,3,4,5,6,7,8,9});
 
     while (true)
     {
@@ -159,6 +166,22 @@ int sendData()
 
         usleep(3*1000*1000);
     }    
+}
+
+int recvData()
+{
+    InterfaceTCPServer InetData(TEST_IP, TEST_PORT);
+    FlyPlaneData Data;
+
+    while (true)
+    {
+        int length = InetData.readFlyPlaneData(Data);
+
+        if (length > 0)
+        {
+            std::cout << Data.getPointCount() << std::endl;
+        }
+    }
 }
 
 int main() 
