@@ -2,6 +2,7 @@
 #include <cstring>
 #include <stdexcept>
 #include <vector>
+#include <fstream>
 
 WGS84Coord::WGS84Coord() : lat(0), lon(0), alt(0) {}
 WGS84Coord::WGS84Coord(float lat, float lon, float alt) : lat(lat), lon(lon), alt(alt) {}
@@ -75,15 +76,12 @@ unsigned char* FlyPlaneData::Serialization() {
         ptr += sizeof(WGS84Coord) * pointCount;
     }
 
-    // Сериализуем размеры изображения
-    memcpy(ptr, &imageWidth, sizeof(int));
-    ptr += sizeof(int);
-    memcpy(ptr, &imageHeight, sizeof(int));
-    ptr += sizeof(int);
+    // Сериализуем размер изображения
+    memcpy(ptr, &imageSize, sizeof(size_t));
+    ptr += sizeof(size_t);
 
-    // Сериализуем само изображение (RGBA формат)
-    if (image && imageWidth > 0 && imageHeight > 0) {
-        size_t imageSize = imageWidth * imageHeight * 4;
+    // Сериализуем данные изображения
+    if (image && imageSize > 0) {
         memcpy(ptr, image, imageSize);
     }
 
@@ -94,7 +92,7 @@ unsigned char* FlyPlaneData::Serialization() {
 }
 
 bool FlyPlaneData::DeSerialization(unsigned char* ptr, size_t data_size) {
-    if (!ptr || data_size < sizeof(int) * 3) {
+    if (!ptr || data_size < sizeof(int) + sizeof(size_t)) {
         return false;
     }
 
@@ -104,58 +102,57 @@ bool FlyPlaneData::DeSerialization(unsigned char* ptr, size_t data_size) {
     xorEncryptDecrypt(temp_data, data_size);
 
     unsigned char* temp_ptr = temp_data;
-
-    // Проверяем минимальный размер данных
-    size_t min_size = sizeof(int) * 3;
-    if (data_size < min_size) {
-        delete[] temp_data;
-        return false;
-    }
+    size_t remaining_size = data_size;
 
     // Десериализуем pointCount
-    memcpy(&pointCount, temp_ptr, sizeof(int));
-    temp_ptr += sizeof(int);
-
-    // Проверяем размер для координат
-    size_t coords_size = sizeof(WGS84Coord) * pointCount;
-    if (data_size < min_size + coords_size) {
+    if (remaining_size < sizeof(int)) {
         delete[] temp_data;
         return false;
     }
+    memcpy(&pointCount, temp_ptr, sizeof(int));
+    temp_ptr += sizeof(int);
+    remaining_size -= sizeof(int);
 
     // Десериализуем coords
     delete[] coords;
+    coords = nullptr;
+    
     if (pointCount > 0) {
+        size_t coords_size = sizeof(WGS84Coord) * pointCount;
+        if (remaining_size < coords_size) {
+            delete[] temp_data;
+            return false;
+        }
         coords = new WGS84Coord[pointCount];
         memcpy(coords, temp_ptr, coords_size);
         temp_ptr += coords_size;
-    } else {
-        coords = nullptr;
+        remaining_size -= coords_size;
     }
 
-    // Десериализуем размеры изображения
-    memcpy(&imageWidth, temp_ptr, sizeof(int));
-    temp_ptr += sizeof(int);
-    memcpy(&imageHeight, temp_ptr, sizeof(int));
-    temp_ptr += sizeof(int);
+    // Десериализуем размер изображения
+    if (remaining_size < sizeof(size_t)) {
+        delete[] temp_data;
+        return false;
+    }
+    size_t receivedImageSize;
+    memcpy(&receivedImageSize, temp_ptr, sizeof(size_t));
+    temp_ptr += sizeof(size_t);
+    remaining_size -= sizeof(size_t);
 
-    // Десериализуем изображение
+    // Проверяем размер для данных изображения
+    if (remaining_size < receivedImageSize) {
+        delete[] temp_data;
+        return false;
+    }
+
+    // Десериализуем данные изображения
     delete[] image;
-    if (imageWidth > 0 && imageHeight > 0) {
-        size_t image_size = imageWidth * imageHeight * 4;
-        
-        // Проверяем, что осталось достаточно данных для изображения
-        size_t remaining_size = data_size - (temp_ptr - temp_data);
-        if (remaining_size < image_size) {
-            image = nullptr;
-            imageWidth = 0;
-            imageHeight = 0;
-        } else {
-            image = new unsigned char[image_size];
-            memcpy(image, temp_ptr, image_size);
-        }
-    } else {
-        image = nullptr;
+    image = nullptr;
+    imageSize = receivedImageSize;
+    
+    if (imageSize > 0) {
+        image = new unsigned char[imageSize];
+        memcpy(image, temp_ptr, imageSize);
     }
 
     delete[] temp_data;
@@ -163,161 +160,51 @@ bool FlyPlaneData::DeSerialization(unsigned char* ptr, size_t data_size) {
 }
 
 size_t FlyPlaneData::getSerializedSize() const {
-    size_t totalSize = sizeof(int) * 3; // pointCount + imageWidth + imageHeight
+    size_t totalSize = sizeof(int); // pointCount
     totalSize += sizeof(WGS84Coord) * pointCount;
-    totalSize += (image && imageWidth > 0 && imageHeight > 0) ? imageWidth * imageHeight * 4 : 0;
+    totalSize += sizeof(size_t); // imageSize
+    totalSize += imageSize; // image data
     return totalSize;
 }
 
-bool FlyPlaneData::loadPNG(const char* filename)
-{
-    FILE* fp = fopen(filename, "rb");
-    if (!fp) {
+bool FlyPlaneData::loadPNG(const char* filename) {
+    std::ifstream file(filename, std::ios::binary);
+    if (!file) {
         return false;
     }
 
-    // Проверяем сигнатуру PNG
-    png_byte header[8];
-    fread(header, 1, 8, fp);
-    if (png_sig_cmp(header, 0, 8)) {
-        fclose(fp);
-        return false;
-    }
-
-    // Инициализируем структуры libpng
-    png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-    if (!png) {
-        fclose(fp);
-        return false;
-    }
-
-    png_infop info = png_create_info_struct(png);
-    if (!info) {
-        png_destroy_read_struct(&png, nullptr, nullptr);
-        fclose(fp);
-        return false;
-    }
-
-    if (setjmp(png_jmpbuf(png))) {
-        png_destroy_read_struct(&png, &info, nullptr);
-        fclose(fp);
-        return false;
-    }
-
-    png_init_io(png, fp);
-    png_set_sig_bytes(png, 8);
-
-    png_read_info(png, info);
-
-    imageWidth = png_get_image_width(png, info);
-    imageHeight = png_get_image_height(png, info);
-    png_byte color_type = png_get_color_type(png, info);
-    png_byte bit_depth = png_get_bit_depth(png, info);
-
-    // Преобразуем в 8-bit RGBA
-    if (bit_depth == 16)
-        png_set_strip_16(png);
-
-    if (color_type == PNG_COLOR_TYPE_PALETTE)
-        png_set_palette_to_rgb(png);
-
-    if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8)
-        png_set_expand_gray_1_2_4_to_8(png);
-
-    if (png_get_valid(png, info, PNG_INFO_tRNS))
-        png_set_tRNS_to_alpha(png);
-
-    if (color_type == PNG_COLOR_TYPE_RGB ||
-        color_type == PNG_COLOR_TYPE_GRAY ||
-        color_type == PNG_COLOR_TYPE_PALETTE)
-        png_set_filler(png, 0xFF, PNG_FILLER_AFTER);
-
-    if (color_type == PNG_COLOR_TYPE_GRAY ||
-        color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
-        png_set_gray_to_rgb(png);
-
-    png_read_update_info(png, info);
-
-    // Выделяем память для изображения (RGBA - 4 канала)
-    size_t row_bytes = png_get_rowbytes(png, info);
-    size_t image_size = row_bytes * imageHeight;
-    
+    // Освобождаем старые данные
     delete[] image;
-    image = new unsigned char[image_size];
+    image = nullptr;
+    imageSize = 0;
 
-    // Читаем построчно
-    std::vector<png_bytep> row_pointers(imageHeight);
-    for (int y = 0; y < imageHeight; y++) {
-        row_pointers[y] = image + y * row_bytes;
-    }
+    // Определяем размер файла
+    file.seekg(0, std::ios::end);
+    imageSize = file.tellg();
+    file.seekg(0, std::ios::beg);
 
-    png_read_image(png, row_pointers.data());
-    png_read_end(png, nullptr);
+    // Выделяем память и читаем данные
+    image = new unsigned char[imageSize];
+    file.read(reinterpret_cast<char*>(image), imageSize);
 
-    png_destroy_read_struct(&png, &info, nullptr);
-    fclose(fp);
-
-    return true;
+    return file.good();
 }
 
 bool FlyPlaneData::savePNG(const char* filename)
 {
-    if (!image || imageWidth <= 0 || imageHeight <= 0) {
+    if (!image || imageSize == 0) {
         return false;
     }
 
-    FILE* fp = fopen(filename, "wb");
-    if (!fp) {
+    std::ofstream file(filename, std::ios::binary);
+    if (!file) {
         return false;
     }
 
-    png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-    if (!png) {
-        fclose(fp);
-        return false;
-    }
+    file.write(reinterpret_cast<const char*>(image), imageSize);
+    return file.good();
+}
 
-    png_infop info = png_create_info_struct(png);
-    if (!info) {
-        png_destroy_write_struct(&png, nullptr);
-        fclose(fp);
-        return false;
-    }
-
-    if (setjmp(png_jmpbuf(png))) {
-        png_destroy_write_struct(&png, &info);
-        fclose(fp);
-        return false;
-    }
-
-    png_init_io(png, fp);
-
-    // Настройка параметров PNG
-    png_set_IHDR(
-        png,
-        info,
-        imageWidth, imageHeight,
-        8,
-        PNG_COLOR_TYPE_RGBA,
-        PNG_INTERLACE_NONE,
-        PNG_COMPRESSION_TYPE_DEFAULT,
-        PNG_FILTER_TYPE_DEFAULT
-    );
-
-    png_write_info(png, info);
-
-    // Записываем построчно
-    size_t row_bytes = 4 * imageWidth; // RGBA = 4 bytes per pixel
-    std::vector<png_bytep> row_pointers(imageHeight);
-    for (int y = 0; y < imageHeight; y++) {
-        row_pointers[y] = image + y * row_bytes;
-    }
-
-    png_write_image(png, row_pointers.data());
-    png_write_end(png, nullptr);
-
-    png_destroy_write_struct(&png, &info);
-    fclose(fp);
-
-    return true;
+size_t FlyPlaneData::getImageSize() const {
+    return imageSize;
 }

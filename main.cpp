@@ -179,8 +179,7 @@ int recvData()
 
         if (length > 0)
         {
-            auto tmp = Data.getImage();
-            std::cout << tmp << std::endl;
+            std::cout << Data.getPointCount() << std::endl;
         }
     }
 }

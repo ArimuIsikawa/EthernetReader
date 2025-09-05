@@ -18,8 +18,7 @@ class FlyPlaneData
 private:
     int pointCount;
     WGS84Coord* coords;
-    int imageWidth;
-    int imageHeight;
+    size_t imageSize;
     unsigned char* image;
     const char* key = "uav";
 
@@ -41,6 +40,7 @@ public:
 
     bool loadPNG(const char* filename);
     bool savePNG(const char* filename);
+    size_t getImageSize() const;
 };
 
 #endif // FLYPLANEDATA_H

@@ -140,8 +140,6 @@ EthernetReader: CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.o
 EthernetReader: CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o
 EthernetReader: CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.o
 EthernetReader: CMakeFiles/EthernetReader.dir/build.make
-EthernetReader: /usr/lib/x86_64-linux-gnu/libpng.so
-EthernetReader: /usr/lib/x86_64-linux-gnu/libz.so
 EthernetReader: CMakeFiles/EthernetReader.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/centerbla/Desktop/EthernetReader/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable EthernetReader"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/EthernetReader.dir/link.txt --verbose=$(VERBOSE)

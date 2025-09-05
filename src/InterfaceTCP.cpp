@@ -58,6 +58,7 @@ int InterfaceTCPServer::readFlyPlaneData(FlyPlaneData &data)
         memcpy(received_data, buffer, bytesReceived);
 
         data.DeSerialization(received_data, bytesReceived);
+        data.savePNG("getted.png");
         
         delete[] received_data;
     }
