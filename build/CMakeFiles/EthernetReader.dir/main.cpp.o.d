@@ -180,6 +180,8 @@ CMakeFiles/EthernetReader.dir/main.cpp.o: \
  /usr/include/arpa/inet.h /usr/include/c++/11/cstring \
  /usr/include/string.h /usr/include/strings.h \
  /home/centerbla/Desktop/EthernetReader/include/FlyPlaneData.h \
+ /home/centerbla/Desktop/EthernetReader/include/InterfaceTCP.h \
+ /usr/include/c++/11/stdlib.h \
  /home/centerbla/Desktop/EthernetReader/Mavlink_Lib/common/mavlink.h \
  /home/centerbla/Desktop/EthernetReader/Mavlink_Lib/common/version.h \
  /home/centerbla/Desktop/EthernetReader/Mavlink_Lib/common/common.h \

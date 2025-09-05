@@ -23,7 +23,7 @@ public:
 	ssize_t recvFrom(uint8_t buffer[], uint16_t len);
 
 	void sendFlyPlaneData(FlyPlaneData& data);
-	int readFlyPlaneData(FlyPlaneData& data, int timeoutMs = 1000);
+	int readFlyPlaneData(FlyPlaneData& data);
 };
 
 #endif

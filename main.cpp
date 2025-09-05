@@ -3,18 +3,19 @@
 
 #include "FlyPlaneData.h"
 #include "InterfaceUDP.h"
+#include "InterfaceTCP.h"
 
 #include "Mavlink_Lib/common/mavlink.h"
-
-#ifdef MAVLINK_H
-    //#include "Mavlink_Lib/ardupilotmega/ardupilotmega.h"
-#endif
+//#include "Mavlink_Lib/ardupilotmega/ardupilotmega.h"
 
 #define MAIN_IP         "196.10.10.135"
 #define MAIN_PORT       14597
 
-#define MAVLINK_IP         "0.0.0.0"
-#define MAVLINK_PORT       14557
+#define TEST_IP         "127.0.0.1"
+#define TEST_PORT       14519
+
+#define MAVLINK_IP      "0.0.0.0"
+#define MAVLINK_PORT    14557
 
 mavlink_message_t msg;
 mavlink_status_t status;
@@ -148,17 +149,18 @@ void waitHeartBeat(InterfaceUDP &sitl)
 
 int sendData()
 {
-    InterfaceUDP UDPData(MAIN_IP, MAIN_PORT);
+    InterfaceTCPServer InetData(TEST_IP, TEST_PORT);
     FlyPlaneData Data;
-
-    Data.setCoords(new WGS84Coord(55.123, 37.123, 150), 1);
 
     while (true)
     {
-        UDPData.sendFlyPlaneData(Data);
+        int length = InetData.readFlyPlaneData(Data);
 
-        usleep(10*1000*1000);
-    }
+        if (length > 0)
+        {
+            std::cout << Data.getCoords()[0].lat << std::endl;
+        }
+    }    
 }
 
 int main() 

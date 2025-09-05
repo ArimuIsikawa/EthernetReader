@@ -42,7 +42,7 @@ void InterfaceUDP::sendFlyPlaneData(FlyPlaneData& data)
     delete[] serializedData;
 }
 
-int InterfaceUDP::readFlyPlaneData(FlyPlaneData &data, int timeoutMs)
+int InterfaceUDP::readFlyPlaneData(FlyPlaneData &data)
 {
     const int BUFFER_SIZE = 2048*16;
     unsigned char buffer[BUFFER_SIZE];

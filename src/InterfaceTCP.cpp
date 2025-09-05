@@ -35,54 +35,41 @@ InterfaceTCPServer::~InterfaceTCPServer()
     if (client_fd > 0) close(client_fd);
 }
 
-int InterfaceTCPServer::StartListen()
+
+int InterfaceTCPServer::readFlyPlaneData(FlyPlaneData &data)
 {
-    // Бесконечный цикл прослушки
-    while (true) 
+    if (client_fd <= 0) 
     {
         printf("Waiting for client connection...\n");
-        
-        // Принятие подключения
+
         if ((client_fd = accept(server_fd, (struct sockaddr *)&address, &addrlen)) < 0) {
             perror("accept");
-            continue;
+            return 1;
         }
-        
         printf("Client connected\n");
-        
-        // Получение данных
-        unsigned char buffer[BUFFER_SIZE];
-        ssize_t bytes_received;
-        
-        while (true) 
-        {
-            bytes_received = recv(client_fd, buffer, BUFFER_SIZE, 0);
-            
-            if (bytes_received > 0) {
-                printf("Received %zd bytes:\n", bytes_received);
-                for (int i = 0; i < bytes_received; i++) {
-                    printf("%02X ", buffer[i]);
-                }
-                printf("\n");
-            } 
-            else if (bytes_received == 0) {
-                printf("Client disconnected\n");
-                break;
-            }
-            else {
-                perror("recv error");
-                break;
-            }
-            
-            memset(buffer, 0, BUFFER_SIZE);
-        }
-        
-        close(client_fd);
-        printf("Connection closed, waiting for next client...\n\n");
     }
+
+    unsigned char buffer[BUFFER_SIZE];
+    ssize_t bytesReceived = recv(client_fd, buffer, BUFFER_SIZE, 0);
     
-    close(server_fd);
-    return 0;
+    if (bytesReceived > 0) 
+    {
+        unsigned char* received_data = new unsigned char[bytesReceived];
+        memcpy(received_data, buffer, bytesReceived);
+
+        data.DeSerialization(received_data);
+        
+        delete[] received_data;
+    }
+    else
+    {
+        close(client_fd);
+        client_fd = -1;
+    }
+
+    memset(buffer, 0, BUFFER_SIZE);
+
+    return bytesReceived;
 }
 
 InterfaceTCPClient::InterfaceTCPClient(const char *ip, const int port)
@@ -127,11 +114,8 @@ int InterfaceTCPClient::ConnectToServer()
     return sock;
 }
 
-int InterfaceTCPClient::SendVideoFrame()
+int InterfaceTCPClient::sendFlyPlaneData(FlyPlaneData& data)
 {
-    unsigned char data[] = {0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x21}; // "Hello!" в hex
-    size_t data_size = sizeof(data);
-
     for (int i = 0; i < 10; ++i)
     {
         // Попытка подключения
@@ -145,20 +129,21 @@ int InterfaceTCPClient::SendVideoFrame()
 
     if (sock < 0) return -1;
 
+    unsigned char* serializedData = data.Serialization();
+    int dataSize = data.getSerializedSize();
+
     // Get Frame
     // Get Frame
     // Get Frame
-    
-    // Отправка данных
-    ssize_t bytes_sent = send(sock, data, data_size, MSG_NOSIGNAL);
-    
-    if (bytes_sent > 0) 
-        printf("Sent %zd bytes\n", bytes_sent);
-    else {
-        printf("Send failed or connection closed. Attempting to reconnect...\n");
+
+    ssize_t bytes_sent = send(sock, serializedData, dataSize, MSG_NOSIGNAL);
+    delete[] serializedData;
+
+    if (bytes_sent <= 0)
+    {
         close(sock);
         sock = -1;
     }
 
-    return 0;
+    return bytes_sent;
 }

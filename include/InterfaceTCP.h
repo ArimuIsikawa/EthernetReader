@@ -7,7 +7,9 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-#define BUFFER_SIZE 1024
+#include "FlyPlaneData.h"
+
+#define BUFFER_SIZE 2048*16
 
 class InterfaceTCPServer
 {
@@ -19,7 +21,7 @@ public:
     InterfaceTCPServer(const char* ip, const int port);
     ~InterfaceTCPServer();
 
-    int StartListen();
+    int readFlyPlaneData(FlyPlaneData &data);
 };
 
 class InterfaceTCPClient
@@ -35,7 +37,7 @@ public:
 	~InterfaceTCPClient();
 
     int ConnectToServer();
-    int SendVideoFrame();
+    int sendFlyPlaneData(FlyPlaneData& data);
 };
 
 #endif
