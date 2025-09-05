@@ -16,7 +16,6 @@ public:
 	int handler;
 	sockaddr_in sent_addr, recv_addr;
 
-
 	InterfaceUDP(char* ip, int port); 
 	~InterfaceUDP();
 

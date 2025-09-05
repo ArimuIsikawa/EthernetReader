@@ -1,1 +1,1 @@
-/usr/lib/ccache/c++ -g CMakeFiles/EthernetReader.dir/main.cpp.o CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.o CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.o -o EthernetReader 
+/usr/lib/ccache/c++ -g CMakeFiles/EthernetReader.dir/main.cpp.o CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.o CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.o -o EthernetReader 

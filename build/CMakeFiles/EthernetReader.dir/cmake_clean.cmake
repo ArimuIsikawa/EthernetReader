@@ -1,10 +1,12 @@
 file(REMOVE_RECURSE
   "CMakeFiles/EthernetReader.dir/main.cpp.o"
   "CMakeFiles/EthernetReader.dir/main.cpp.o.d"
-  "CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.o"
-  "CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.o.d"
-  "CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.o"
-  "CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.o.d"
+  "CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.o"
+  "CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.o.d"
+  "CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.o"
+  "CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.o.d"
+  "CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o"
+  "CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o.d"
   "EthernetReader"
   "EthernetReader.pdb"
 )

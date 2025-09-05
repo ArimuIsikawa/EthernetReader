@@ -150,9 +150,9 @@ CMakeFiles/EthernetReader.dir/main.cpp.o: \
  /usr/include/c++/11/bits/stl_vector.h \
  /usr/include/c++/11/bits/stl_bvector.h \
  /usr/include/c++/11/bits/vector.tcc \
- /home/centerbla/Desktop/EthernetReader/src/FlyPlaneData/FlyPlaneData.h \
+ /home/centerbla/Desktop/EthernetReader/include/FlyPlaneData.h \
  /usr/include/c++/11/cstddef \
- /home/centerbla/Desktop/EthernetReader/src/InterfaceUDP/InterfaceUDP.h \
+ /home/centerbla/Desktop/EthernetReader/include/InterfaceUDP.h \
  /usr/include/unistd.h /usr/include/x86_64-linux-gnu/bits/posix_opt.h \
  /usr/include/x86_64-linux-gnu/bits/environments.h \
  /usr/include/x86_64-linux-gnu/bits/confname.h \
@@ -179,6 +179,7 @@ CMakeFiles/EthernetReader.dir/main.cpp.o: \
  /usr/include/netinet/in.h /usr/include/x86_64-linux-gnu/bits/in.h \
  /usr/include/arpa/inet.h /usr/include/c++/11/cstring \
  /usr/include/string.h /usr/include/strings.h \
+ /home/centerbla/Desktop/EthernetReader/include/FlyPlaneData.h \
  /home/centerbla/Desktop/EthernetReader/Mavlink_Lib/common/mavlink.h \
  /home/centerbla/Desktop/EthernetReader/Mavlink_Lib/common/version.h \
  /home/centerbla/Desktop/EthernetReader/Mavlink_Lib/common/common.h \

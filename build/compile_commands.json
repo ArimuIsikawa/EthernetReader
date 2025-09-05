@@ -1,17 +1,22 @@
 [
 {
   "directory": "/home/centerbla/Desktop/EthernetReader/build",
-  "command": "/usr/lib/ccache/c++  -I/home/centerbla/Desktop/EthernetReader/src/FlyPlaneData -I/home/centerbla/Desktop/EthernetReader/src/InterfaceUDP -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/common -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/ardupilotmega -g   -w -std=gnu++17 -o CMakeFiles/EthernetReader.dir/main.cpp.o -c /home/centerbla/Desktop/EthernetReader/main.cpp",
+  "command": "/usr/lib/ccache/c++  -I/home/centerbla/Desktop/EthernetReader/include -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/common -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/ardupilotmega -g   -w -std=gnu++17 -o CMakeFiles/EthernetReader.dir/main.cpp.o -c /home/centerbla/Desktop/EthernetReader/main.cpp",
   "file": "/home/centerbla/Desktop/EthernetReader/main.cpp"
 },
 {
   "directory": "/home/centerbla/Desktop/EthernetReader/build",
-  "command": "/usr/lib/ccache/c++  -I/home/centerbla/Desktop/EthernetReader/src/FlyPlaneData -I/home/centerbla/Desktop/EthernetReader/src/InterfaceUDP -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/common -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/ardupilotmega -g   -w -std=gnu++17 -o CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.o -c /home/centerbla/Desktop/EthernetReader/src/FlyPlaneData/FlyPlaneData.cpp",
-  "file": "/home/centerbla/Desktop/EthernetReader/src/FlyPlaneData/FlyPlaneData.cpp"
+  "command": "/usr/lib/ccache/c++  -I/home/centerbla/Desktop/EthernetReader/include -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/common -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/ardupilotmega -g   -w -std=gnu++17 -o CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.o -c /home/centerbla/Desktop/EthernetReader/src/FlyPlaneData.cpp",
+  "file": "/home/centerbla/Desktop/EthernetReader/src/FlyPlaneData.cpp"
 },
 {
   "directory": "/home/centerbla/Desktop/EthernetReader/build",
-  "command": "/usr/lib/ccache/c++  -I/home/centerbla/Desktop/EthernetReader/src/FlyPlaneData -I/home/centerbla/Desktop/EthernetReader/src/InterfaceUDP -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/common -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/ardupilotmega -g   -w -std=gnu++17 -o CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.o -c /home/centerbla/Desktop/EthernetReader/src/InterfaceUDP/InterfaceUDP.cpp",
-  "file": "/home/centerbla/Desktop/EthernetReader/src/InterfaceUDP/InterfaceUDP.cpp"
+  "command": "/usr/lib/ccache/c++  -I/home/centerbla/Desktop/EthernetReader/include -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/common -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/ardupilotmega -g   -w -std=gnu++17 -o CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o -c /home/centerbla/Desktop/EthernetReader/src/InterfaceUDP.cpp",
+  "file": "/home/centerbla/Desktop/EthernetReader/src/InterfaceUDP.cpp"
+},
+{
+  "directory": "/home/centerbla/Desktop/EthernetReader/build",
+  "command": "/usr/lib/ccache/c++  -I/home/centerbla/Desktop/EthernetReader/include -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/common -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/ardupilotmega -g   -w -std=gnu++17 -o CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.o -c /home/centerbla/Desktop/EthernetReader/src/InterfaceTCP.cpp",
+  "file": "/home/centerbla/Desktop/EthernetReader/src/InterfaceTCP.cpp"
 }
 ]

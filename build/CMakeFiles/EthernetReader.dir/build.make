@@ -83,49 +83,65 @@ CMakeFiles/EthernetReader.dir/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/EthernetReader.dir/main.cpp.s"
 	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/centerbla/Desktop/EthernetReader/main.cpp -o CMakeFiles/EthernetReader.dir/main.cpp.s
 
-CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.o: CMakeFiles/EthernetReader.dir/flags.make
-CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.o: ../src/FlyPlaneData/FlyPlaneData.cpp
-CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.o: CMakeFiles/EthernetReader.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/centerbla/Desktop/EthernetReader/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.o"
-	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.o -MF CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.o.d -o CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.o -c /home/centerbla/Desktop/EthernetReader/src/FlyPlaneData/FlyPlaneData.cpp
+CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.o: CMakeFiles/EthernetReader.dir/flags.make
+CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.o: ../src/FlyPlaneData.cpp
+CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.o: CMakeFiles/EthernetReader.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/centerbla/Desktop/EthernetReader/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.o"
+	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.o -MF CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.o.d -o CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.o -c /home/centerbla/Desktop/EthernetReader/src/FlyPlaneData.cpp
 
-CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.i"
-	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/centerbla/Desktop/EthernetReader/src/FlyPlaneData/FlyPlaneData.cpp > CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.i
+CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.i"
+	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/centerbla/Desktop/EthernetReader/src/FlyPlaneData.cpp > CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.i
 
-CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.s"
-	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/centerbla/Desktop/EthernetReader/src/FlyPlaneData/FlyPlaneData.cpp -o CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.s
+CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.s"
+	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/centerbla/Desktop/EthernetReader/src/FlyPlaneData.cpp -o CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.s
 
-CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.o: CMakeFiles/EthernetReader.dir/flags.make
-CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.o: ../src/InterfaceUDP/InterfaceUDP.cpp
-CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.o: CMakeFiles/EthernetReader.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/centerbla/Desktop/EthernetReader/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.o"
-	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.o -MF CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.o.d -o CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.o -c /home/centerbla/Desktop/EthernetReader/src/InterfaceUDP/InterfaceUDP.cpp
+CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o: CMakeFiles/EthernetReader.dir/flags.make
+CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o: ../src/InterfaceUDP.cpp
+CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o: CMakeFiles/EthernetReader.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/centerbla/Desktop/EthernetReader/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o"
+	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o -MF CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o.d -o CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o -c /home/centerbla/Desktop/EthernetReader/src/InterfaceUDP.cpp
 
-CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.i"
-	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/centerbla/Desktop/EthernetReader/src/InterfaceUDP/InterfaceUDP.cpp > CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.i
+CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.i"
+	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/centerbla/Desktop/EthernetReader/src/InterfaceUDP.cpp > CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.i
 
-CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.s"
-	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/centerbla/Desktop/EthernetReader/src/InterfaceUDP/InterfaceUDP.cpp -o CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.s
+CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.s"
+	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/centerbla/Desktop/EthernetReader/src/InterfaceUDP.cpp -o CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.s
+
+CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.o: CMakeFiles/EthernetReader.dir/flags.make
+CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.o: ../src/InterfaceTCP.cpp
+CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.o: CMakeFiles/EthernetReader.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/centerbla/Desktop/EthernetReader/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.o"
+	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.o -MF CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.o.d -o CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.o -c /home/centerbla/Desktop/EthernetReader/src/InterfaceTCP.cpp
+
+CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.i"
+	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/centerbla/Desktop/EthernetReader/src/InterfaceTCP.cpp > CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.i
+
+CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.s"
+	/usr/lib/ccache/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/centerbla/Desktop/EthernetReader/src/InterfaceTCP.cpp -o CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.s
 
 # Object files for target EthernetReader
 EthernetReader_OBJECTS = \
 "CMakeFiles/EthernetReader.dir/main.cpp.o" \
-"CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.o" \
-"CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.o"
+"CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.o" \
+"CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o" \
+"CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.o"
 
 # External object files for target EthernetReader
 EthernetReader_EXTERNAL_OBJECTS =
 
 EthernetReader: CMakeFiles/EthernetReader.dir/main.cpp.o
-EthernetReader: CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.o
-EthernetReader: CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.o
+EthernetReader: CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.o
+EthernetReader: CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o
+EthernetReader: CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.o
 EthernetReader: CMakeFiles/EthernetReader.dir/build.make
 EthernetReader: CMakeFiles/EthernetReader.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/centerbla/Desktop/EthernetReader/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX executable EthernetReader"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/centerbla/Desktop/EthernetReader/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable EthernetReader"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/EthernetReader.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

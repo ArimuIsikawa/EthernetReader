@@ -153,53 +153,77 @@ main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/main.cpp.s
 .PHONY : main.cpp.s
 
-src/FlyPlaneData/FlyPlaneData.o: src/FlyPlaneData/FlyPlaneData.cpp.o
-.PHONY : src/FlyPlaneData/FlyPlaneData.o
+src/FlyPlaneData.o: src/FlyPlaneData.cpp.o
+.PHONY : src/FlyPlaneData.o
 
 # target to build an object file
-src/FlyPlaneData/FlyPlaneData.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.o
-.PHONY : src/FlyPlaneData/FlyPlaneData.cpp.o
+src/FlyPlaneData.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.o
+.PHONY : src/FlyPlaneData.cpp.o
 
-src/FlyPlaneData/FlyPlaneData.i: src/FlyPlaneData/FlyPlaneData.cpp.i
-.PHONY : src/FlyPlaneData/FlyPlaneData.i
+src/FlyPlaneData.i: src/FlyPlaneData.cpp.i
+.PHONY : src/FlyPlaneData.i
 
 # target to preprocess a source file
-src/FlyPlaneData/FlyPlaneData.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.i
-.PHONY : src/FlyPlaneData/FlyPlaneData.cpp.i
+src/FlyPlaneData.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.i
+.PHONY : src/FlyPlaneData.cpp.i
 
-src/FlyPlaneData/FlyPlaneData.s: src/FlyPlaneData/FlyPlaneData.cpp.s
-.PHONY : src/FlyPlaneData/FlyPlaneData.s
+src/FlyPlaneData.s: src/FlyPlaneData.cpp.s
+.PHONY : src/FlyPlaneData.s
 
 # target to generate assembly for a file
-src/FlyPlaneData/FlyPlaneData.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/src/FlyPlaneData/FlyPlaneData.cpp.s
-.PHONY : src/FlyPlaneData/FlyPlaneData.cpp.s
+src/FlyPlaneData.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/src/FlyPlaneData.cpp.s
+.PHONY : src/FlyPlaneData.cpp.s
 
-src/InterfaceUDP/InterfaceUDP.o: src/InterfaceUDP/InterfaceUDP.cpp.o
-.PHONY : src/InterfaceUDP/InterfaceUDP.o
+src/InterfaceTCP.o: src/InterfaceTCP.cpp.o
+.PHONY : src/InterfaceTCP.o
 
 # target to build an object file
-src/InterfaceUDP/InterfaceUDP.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.o
-.PHONY : src/InterfaceUDP/InterfaceUDP.cpp.o
+src/InterfaceTCP.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.o
+.PHONY : src/InterfaceTCP.cpp.o
 
-src/InterfaceUDP/InterfaceUDP.i: src/InterfaceUDP/InterfaceUDP.cpp.i
-.PHONY : src/InterfaceUDP/InterfaceUDP.i
+src/InterfaceTCP.i: src/InterfaceTCP.cpp.i
+.PHONY : src/InterfaceTCP.i
 
 # target to preprocess a source file
-src/InterfaceUDP/InterfaceUDP.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.i
-.PHONY : src/InterfaceUDP/InterfaceUDP.cpp.i
+src/InterfaceTCP.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.i
+.PHONY : src/InterfaceTCP.cpp.i
 
-src/InterfaceUDP/InterfaceUDP.s: src/InterfaceUDP/InterfaceUDP.cpp.s
-.PHONY : src/InterfaceUDP/InterfaceUDP.s
+src/InterfaceTCP.s: src/InterfaceTCP.cpp.s
+.PHONY : src/InterfaceTCP.s
 
 # target to generate assembly for a file
-src/InterfaceUDP/InterfaceUDP.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/src/InterfaceUDP/InterfaceUDP.cpp.s
-.PHONY : src/InterfaceUDP/InterfaceUDP.cpp.s
+src/InterfaceTCP.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/src/InterfaceTCP.cpp.s
+.PHONY : src/InterfaceTCP.cpp.s
+
+src/InterfaceUDP.o: src/InterfaceUDP.cpp.o
+.PHONY : src/InterfaceUDP.o
+
+# target to build an object file
+src/InterfaceUDP.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o
+.PHONY : src/InterfaceUDP.cpp.o
+
+src/InterfaceUDP.i: src/InterfaceUDP.cpp.i
+.PHONY : src/InterfaceUDP.i
+
+# target to preprocess a source file
+src/InterfaceUDP.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.i
+.PHONY : src/InterfaceUDP.cpp.i
+
+src/InterfaceUDP.s: src/InterfaceUDP.cpp.s
+.PHONY : src/InterfaceUDP.s
+
+# target to generate assembly for a file
+src/InterfaceUDP.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/EthernetReader.dir/build.make CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.s
+.PHONY : src/InterfaceUDP.cpp.s
 
 # Help Target
 help:
@@ -213,12 +237,15 @@ help:
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
-	@echo "... src/FlyPlaneData/FlyPlaneData.o"
-	@echo "... src/FlyPlaneData/FlyPlaneData.i"
-	@echo "... src/FlyPlaneData/FlyPlaneData.s"
-	@echo "... src/InterfaceUDP/InterfaceUDP.o"
-	@echo "... src/InterfaceUDP/InterfaceUDP.i"
-	@echo "... src/InterfaceUDP/InterfaceUDP.s"
+	@echo "... src/FlyPlaneData.o"
+	@echo "... src/FlyPlaneData.i"
+	@echo "... src/FlyPlaneData.s"
+	@echo "... src/InterfaceTCP.o"
+	@echo "... src/InterfaceTCP.i"
+	@echo "... src/InterfaceTCP.s"
+	@echo "... src/InterfaceUDP.o"
+	@echo "... src/InterfaceUDP.i"
+	@echo "... src/InterfaceUDP.s"
 .PHONY : help
 
 
