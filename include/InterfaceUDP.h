@@ -10,6 +10,8 @@
 
 #include "FlyPlaneData.h"
 
+#define BUFFER_SIZE 2097152
+
 class InterfaceUDP
 {
 public:

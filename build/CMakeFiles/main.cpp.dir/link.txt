@@ -1,1 +1,0 @@
-/usr/lib/ccache/c++ -g CMakeFiles/main.cpp.dir/src/FlyPlaneData/FlyPlaneData.cpp.o CMakeFiles/main.cpp.dir/src/InterfaceUDP/InterfaceUDP.cpp.o -o main.cpp 

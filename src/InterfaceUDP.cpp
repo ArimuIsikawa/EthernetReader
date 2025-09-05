@@ -44,8 +44,7 @@ void InterfaceUDP::sendFlyPlaneData(FlyPlaneData& data)
 
 int InterfaceUDP::readFlyPlaneData(FlyPlaneData &data)
 {
-    const int BUFFER_SIZE = 2048*16;
-    unsigned char buffer[BUFFER_SIZE];
+    unsigned char* buffer = new unsigned char [BUFFER_SIZE];
 
     socklen_t len = sizeof(sent_addr);
     ssize_t bytesReceived = recvFrom(buffer, sizeof(buffer));

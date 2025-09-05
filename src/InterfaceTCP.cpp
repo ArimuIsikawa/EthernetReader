@@ -35,7 +35,6 @@ InterfaceTCPServer::~InterfaceTCPServer()
     if (client_fd > 0) close(client_fd);
 }
 
-
 int InterfaceTCPServer::readFlyPlaneData(FlyPlaneData &data)
 {
     if (client_fd <= 0) 
@@ -49,7 +48,7 @@ int InterfaceTCPServer::readFlyPlaneData(FlyPlaneData &data)
         printf("Client connected\n");
     }
 
-    unsigned char buffer[BUFFER_SIZE];
+    unsigned char* buffer = new unsigned char [BUFFER_SIZE];
     ssize_t bytesReceived = recv(client_fd, buffer, BUFFER_SIZE, 0);
     
     if (bytesReceived > 0) 

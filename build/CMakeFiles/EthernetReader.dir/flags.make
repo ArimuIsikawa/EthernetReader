@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -I/home/centerbla/Desktop/EthernetReader/include -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/common -I/home/centerbla/Desktop/EthernetReader/Mavlink_Lib/ardupilotmega
 
-CXX_FLAGS = -g   -w -std=gnu++17
+CXX_FLAGS =   -w -std=gnu++17
 

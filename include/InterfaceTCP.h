@@ -9,7 +9,7 @@
 
 #include "FlyPlaneData.h"
 
-#define BUFFER_SIZE 2048*16
+#define BUFFER_SIZE 2097152
 
 class InterfaceTCPServer
 {
