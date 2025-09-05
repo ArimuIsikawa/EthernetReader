@@ -177,4 +177,12 @@ CMakeFiles/EthernetReader.dir/src/InterfaceUDP.cpp.o: \
  /usr/include/c++/11/bits/istream.tcc /usr/include/c++/11/cstring \
  /usr/include/string.h /usr/include/strings.h \
  /home/centerbla/Desktop/EthernetReader/include/FlyPlaneData.h \
- /usr/include/c++/11/cstddef
+ /usr/include/c++/11/cstddef /usr/include/png.h /usr/include/pnglibconf.h \
+ /usr/include/pngconf.h /usr/lib/gcc/x86_64-linux-gnu/11/include/limits.h \
+ /usr/lib/gcc/x86_64-linux-gnu/11/include/syslimits.h \
+ /usr/include/limits.h /usr/include/x86_64-linux-gnu/bits/posix1_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/local_lim.h \
+ /usr/include/linux/limits.h \
+ /usr/include/x86_64-linux-gnu/bits/posix2_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/xopen_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/uio_lim.h /usr/include/setjmp.h

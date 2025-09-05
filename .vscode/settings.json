@@ -53,6 +53,7 @@
         "__nullptr": "cpp",
         "ranges": "cpp",
         "span": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "__config": "cpp"
     }
 }

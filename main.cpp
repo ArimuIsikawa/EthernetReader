@@ -158,7 +158,7 @@ int sendData()
     };
 
     Data.setCoords(tmp, 3);
-    Data.setImage(new unsigned char[9]{1,2,3,4,5,6,7,8,9});
+    Data.setImage("drone.png");
 
     while (true)
     {
@@ -179,13 +179,18 @@ int recvData()
 
         if (length > 0)
         {
-            std::cout << Data.getPointCount() << std::endl;
+            auto tmp = Data.getImage();
+            std::cout << tmp << std::endl;
         }
     }
 }
 
 int main() 
 {
+    recvData();
+
+    return 0;
+
     InterfaceUDP InetData(MAIN_IP, MAIN_PORT);
     InterfaceUDP UDPSitl(MAVLINK_IP, MAVLINK_PORT);
 

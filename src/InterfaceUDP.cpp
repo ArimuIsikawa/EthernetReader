@@ -55,7 +55,7 @@ int InterfaceUDP::readFlyPlaneData(FlyPlaneData &data)
         unsigned char* received_data = new unsigned char[bytesReceived];
         memcpy(received_data, buffer, bytesReceived);
 
-        data.DeSerialization(received_data);
+        data.DeSerialization(received_data, bytesReceived);
         
         delete[] received_data;
     }
