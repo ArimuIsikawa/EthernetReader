@@ -149,28 +149,21 @@ void waitHeartBeat(InterfaceUDP &sitl)
 
 int sendData()
 {
-    InterfaceTCPServer InetData(TEST_IP, TEST_PORT);
+    InterfaceTCPClient InetData(TEST_IP, TEST_PORT);
     FlyPlaneData Data;
+    Data.setCoords(new WGS84Coord(57, 36, 150), 1);
 
     while (true)
     {
-        int length = InetData.readFlyPlaneData(Data);
+        InetData.sendFlyPlaneData(Data);
 
-        if (length > 0)
-        {
-            std::cout << Data.getCoords()[0].lat << std::endl;
-        }
+        usleep(3*1000*1000);
     }    
 }
 
 int main() 
 {
-    sendData();
-    //TCPTest();
-
-    return 0;
-
-    InterfaceUDP UDPData(MAIN_IP, MAIN_PORT);
+    InterfaceUDP InetData(MAIN_IP, MAIN_PORT);
     InterfaceUDP UDPSitl(MAVLINK_IP, MAVLINK_PORT);
 
     FlyPlaneData lastReceivedData;
@@ -179,7 +172,7 @@ int main()
 
     while (true)
     {
-        int length = UDPData.readFlyPlaneData(lastReceivedData);
+        int length = InetData.readFlyPlaneData(lastReceivedData);
 
         if (length > 0)
             Do_SetWayPoints(UDPSitl, lastReceivedData.getCoords(), lastReceivedData.getPointCount());
