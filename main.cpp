@@ -147,49 +147,99 @@ void waitHeartBeat(InterfaceUDP &sitl)
     }
 }
 
-int sendData()
+#include <chrono>
+#include <thread>
+
+void sendImage(InterfaceTCPClient tmp)
 {
-    InterfaceTCPClient InetData(TEST_IP, TEST_PORT);
-    FlyPlaneData Data;
-    auto tmp = new WGS84Coord[3]{
+    while (true)
+    {
+        FlyPlaneData Data;
+        Data.setImage("drone.png");
+        tmp.sendFlyPlaneData(Data);
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    }
+}
+
+void recvImage(InterfaceTCPServer tmp)
+{
+    while (true)
+    {
+        FlyPlaneData Data;
+        tmp.readFlyPlaneData(Data);
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    }
+}
+
+void sendCoords(InterfaceTCPClient tmp)
+{
+    auto coords = new WGS84Coord[3]{
         WGS84Coord(1.0f, 2.0f, 3.0f),
         WGS84Coord(4.0f, 5.0f, 6.0f),
         WGS84Coord(7.0f, 8.0f, 9.0f)
     };
 
-    Data.setCoords(tmp, 3);
-    Data.setImage("drone.png");
+    FlyPlaneData Data;
+    Data.setCoords(coords, 3);
 
     while (true)
     {
-        InetData.sendFlyPlaneData(Data);
-
-        usleep(3*1000*1000);
-    }    
+        tmp.sendFlyPlaneData(Data);
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+    }
 }
 
-int recvData()
+void recvCoords(InterfaceTCPServer tmp)
 {
-    InterfaceTCPServer InetData(TEST_IP, TEST_PORT);
-    FlyPlaneData Data;
-
     while (true)
     {
-        int length = InetData.readFlyPlaneData(Data);
+        FlyPlaneData Data;
+        int length = tmp.readFlyPlaneData(Data);
 
         if (length > 0)
         {
             std::cout << Data.getPointCount() << std::endl;
         }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
+}
+
+int UAV_func()
+{
+    InterfaceTCPServer CoordRecv(TEST_IP, TEST_PORT + 1);
+    InterfaceTCPClient ImageSend(TEST_IP, TEST_PORT);
+
+    std::thread sendThread(sendImage, ImageSend);
+    std::thread recvThread(recvCoords, CoordRecv);
+
+    sendThread.join();
+    recvThread.join();
+}
+
+int PC_func()
+{
+    InterfaceTCPServer ImageRecv(TEST_IP, TEST_PORT);
+    InterfaceTCPClient CoordsSend(TEST_IP, TEST_PORT + 1);
+
+    FlyPlaneData Data;
+
+    std::thread sendThread(sendCoords, CoordsSend);
+    std::thread recvThread(recvImage,  ImageRecv);
+
+    sendThread.join();
+    recvThread.join();
 }
 
 int main() 
 {
-    recvData();
+    PC_func();
 
     return 0;
+}
 
+int tmp_func()
+{
     InterfaceUDP InetData(MAIN_IP, MAIN_PORT);
     InterfaceUDP UDPSitl(MAVLINK_IP, MAVLINK_PORT);
 

@@ -1,3 +1,0 @@
-/home/centerbla/Desktop/EthernetReader/build/CMakeFiles/EthernetReader.dir
-/home/centerbla/Desktop/EthernetReader/build/CMakeFiles/edit_cache.dir
-/home/centerbla/Desktop/EthernetReader/build/CMakeFiles/rebuild_cache.dir

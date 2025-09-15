@@ -54,6 +54,18 @@
         "ranges": "cpp",
         "span": "cpp",
         "filesystem": "cpp",
-        "__config": "cpp"
+        "__config": "cpp",
+        "cmath": "cpp",
+        "complex": "cpp",
+        "map": "cpp",
+        "set": "cpp",
+        "optional": "cpp",
+        "semaphore": "cpp"
+    },
+    "files.exclude": {
+        "**/*.rpyc": true,
+        "**/*.rpa": true,
+        "**/*.rpymc": true,
+        "**/cache/": true
     }
 }
