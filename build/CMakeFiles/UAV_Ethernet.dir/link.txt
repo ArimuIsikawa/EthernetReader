@@ -1,0 +1,1 @@
+/usr/lib/ccache/c++ -g CMakeFiles/UAV_Ethernet.dir/main.cpp.o CMakeFiles/UAV_Ethernet.dir/src/FlyPlaneData.cpp.o CMakeFiles/UAV_Ethernet.dir/src/InterfaceUDP.cpp.o CMakeFiles/UAV_Ethernet.dir/src/InterfaceTCP.cpp.o -o UAV_Ethernet 

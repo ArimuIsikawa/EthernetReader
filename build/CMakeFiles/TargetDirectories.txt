@@ -1,0 +1,3 @@
+/home/centerbla/Desktop/UAV_Ethernet/build/CMakeFiles/UAV_Ethernet.dir
+/home/centerbla/Desktop/UAV_Ethernet/build/CMakeFiles/edit_cache.dir
+/home/centerbla/Desktop/UAV_Ethernet/build/CMakeFiles/rebuild_cache.dir

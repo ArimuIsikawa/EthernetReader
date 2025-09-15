@@ -76,15 +76,6 @@ unsigned char* FlyPlaneData::Serialization() {
         ptr += sizeof(WGS84Coord) * pointCount;
     }
 
-    // Сериализуем размер изображения
-    memcpy(ptr, &imageSize, sizeof(size_t));
-    ptr += sizeof(size_t);
-
-    // Сериализуем данные изображения
-    if (image && imageSize > 0) {
-        memcpy(ptr, image, imageSize);
-    }
-
     // Шифруем данные
     xorEncryptDecrypt(data, totalSize);
 
@@ -129,32 +120,6 @@ bool FlyPlaneData::DeSerialization(unsigned char* ptr, size_t data_size) {
         remaining_size -= coords_size;
     }
 
-    // Десериализуем размер изображения
-    if (remaining_size < sizeof(size_t)) {
-        delete[] temp_data;
-        return false;
-    }
-    size_t receivedImageSize;
-    memcpy(&receivedImageSize, temp_ptr, sizeof(size_t));
-    temp_ptr += sizeof(size_t);
-    remaining_size -= sizeof(size_t);
-
-    // Проверяем размер для данных изображения
-    if (remaining_size < receivedImageSize) {
-        delete[] temp_data;
-        return false;
-    }
-
-    // Десериализуем данные изображения
-    delete[] image;
-    image = nullptr;
-    imageSize = receivedImageSize;
-    
-    if (imageSize > 0) {
-        image = new unsigned char[imageSize];
-        memcpy(image, temp_ptr, imageSize);
-    }
-
     delete[] temp_data;
     return true;
 }
@@ -162,8 +127,6 @@ bool FlyPlaneData::DeSerialization(unsigned char* ptr, size_t data_size) {
 size_t FlyPlaneData::getSerializedSize() const {
     size_t totalSize = sizeof(int); // pointCount
     totalSize += sizeof(WGS84Coord) * pointCount;
-    totalSize += sizeof(size_t); // imageSize
-    totalSize += imageSize; // image data
     return totalSize;
 }
 

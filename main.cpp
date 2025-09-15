@@ -67,8 +67,11 @@ void Do_SetWayPoints(InterfaceUDP &sitl, WGS84Coord* coords, int count)
     int pointI = 0;
     bool finished = false;
 
-    while ((!(pointI < count - 1) && (finished == true)) == false)
+    while (pointI < count - 1)
     {
+        if (finished == true)
+            break;
+
         ssize_t n = sitl.recvFrom(buf, sizeof(buf));
         if (n <= 0)
             continue;
@@ -84,7 +87,7 @@ void Do_SetWayPoints(InterfaceUDP &sitl, WGS84Coord* coords, int count)
                     mavlink_msg_mission_request_int_decode(&msg, &req);
                     uint16_t seq = req.seq;
 
-                    std::cout << seq << std::endl;
+                    //std::cout << seq << "\n";
 
                     mavlink_mission_item_t wp;
 
@@ -105,7 +108,7 @@ void Do_SetWayPoints(InterfaceUDP &sitl, WGS84Coord* coords, int count)
                 case MAVLINK_MSG_ID_MISSION_ACK: {
                     mavlink_mission_ack_t ack;
                     mavlink_msg_mission_ack_decode(&msg, &ack);
-                    std::cout << "Received MISSION_ACK: type=" << static_cast<int>(ack.type) << std::endl;
+                    //std::cout << "Received MISSION_ACK: type=" << static_cast<int>(ack.type) << std::endl;
 
                     if (ack.type == MAV_MISSION_ACCEPTED)
                         std::cout << "Mission uploaded successfully (ACCEPTED)." << std::endl;
@@ -239,6 +242,7 @@ void sendCoords(InterfaceTCPClient tmp)
 void recvCoords(InterfaceTCPServer tmp)
 {
     InterfaceUDP Autopilot(MAVLINK_IP, MAVLINK_PORT);
+    waitHeartBeat(Autopilot);
 
     while (true)
     {
@@ -247,7 +251,6 @@ void recvCoords(InterfaceTCPServer tmp)
 
         if (length > 0)
         {
-            std::cout << Data.getPointCount() << std::endl;
             Do_SetWayPoints(Autopilot, Data.getCoords(), Data.getPointCount());
         }
 
@@ -259,13 +262,7 @@ void recvCoords(InterfaceTCPServer tmp)
 int UAV_func()
 {
     InterfaceTCPServer CoordRecv(TEST_IP, TEST_PORT + 1);
-    InterfaceTCPClient ImageSend(TEST_IP, TEST_PORT);
-
-    std::thread sendThread(sendImage, ImageSend);
-    std::thread recvThread(recvCoords, CoordRecv);
-
-    sendThread.join();
-    recvThread.join();
+    recvCoords(CoordRecv);
 }
 
 int PC_func()
@@ -282,7 +279,7 @@ int PC_func()
 
 int main() 
 {
-    PC_func();
+    UAV_func();
 
     return 0;
 }

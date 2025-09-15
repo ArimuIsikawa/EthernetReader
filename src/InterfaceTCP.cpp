@@ -67,7 +67,7 @@ int InterfaceTCPServer::readFlyPlaneData(FlyPlaneData &data)
         client_fd = -1;
     }
 
-    memset(buffer, 0, BUFFER_SIZE);
+    delete[] buffer;
 
     return bytesReceived;
 }
@@ -118,11 +118,12 @@ int InterfaceTCPClient::sendFlyPlaneData(FlyPlaneData& data)
 {
     for (int i = 0; i < 10; ++i)
     {
+        if (sock > 0)
+            break;
+
         // Попытка подключения
         if (sock < 0)
             sock = ConnectToServer();
-        if (sock > 0)
-            break;
         else
             usleep(1*100*1000);
     }
