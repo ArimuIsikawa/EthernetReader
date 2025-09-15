@@ -60,7 +60,9 @@
         "map": "cpp",
         "set": "cpp",
         "optional": "cpp",
-        "semaphore": "cpp"
+        "semaphore": "cpp",
+        "fstream": "cpp",
+        "__bit_reference": "cpp"
     },
     "files.exclude": {
         "**/*.rpyc": true,

@@ -171,26 +171,75 @@ void recvImage(InterfaceTCPServer tmp)
     }
 }
 
+#include <fstream>
+
+WGS84Coord* tryReadCoords(int& count) 
+{
+    const char* filename = "coords.txt";
+    // Открываем файл для чтения
+    std::ifstream file(filename);
+    
+    // Проверяем, удалось ли открыть файл
+    if (!file.is_open()) {
+        std::cerr << "Ошибка: не удалось открыть файл " << filename << std::endl;
+        return nullptr;
+    }
+    
+    // Перемещаем указатель в конец файла, чтобы узнать его размер
+    file.seekg(0, std::ios::end);
+    std::streampos fileSize = file.tellg();
+    
+    // Если файл пустой, возвращаем false
+    if (fileSize == 0) {
+        std::cout << "Файл пустой" << std::endl;
+        file.close();
+        return nullptr;
+    }
+    
+    file.seekg(0, std::ios::beg);
+    
+    file >> count;
+    auto coords = new WGS84Coord[count];
+
+    for (int i = 0; i < count; ++i)
+    {
+        file >> coords[i].lat;
+        file >> coords[i].lon;
+        file >> coords[i].alt;
+    }
+
+    file.close();
+    remove(filename);
+
+    return coords;
+}
+
+
 void sendCoords(InterfaceTCPClient tmp)
 {
-    auto coords = new WGS84Coord[3]{
-        WGS84Coord(1.0f, 2.0f, 3.0f),
-        WGS84Coord(4.0f, 5.0f, 6.0f),
-        WGS84Coord(7.0f, 8.0f, 9.0f)
-    };
-
     FlyPlaneData Data;
-    Data.setCoords(coords, 3);
-
+    WGS84Coord* coords;
+    int count;
+    
     while (true)
     {
+        coords = tryReadCoords(count);
+        if (coords != nullptr)
+            Data.setCoords(coords, count);
         tmp.sendFlyPlaneData(Data);
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+        count = 0;
+
+        std::this_thread::sleep_for(std::chrono::seconds(10));
     }
+
+    delete coords;
+    coords = nullptr;
 }
 
 void recvCoords(InterfaceTCPServer tmp)
 {
+    InterfaceUDP Autopilot(MAVLINK_IP, MAVLINK_PORT);
+
     while (true)
     {
         FlyPlaneData Data;
@@ -199,11 +248,13 @@ void recvCoords(InterfaceTCPServer tmp)
         if (length > 0)
         {
             std::cout << Data.getPointCount() << std::endl;
+            Do_SetWayPoints(Autopilot, Data.getCoords(), Data.getPointCount());
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
 }
+
 
 int UAV_func()
 {
@@ -234,28 +285,6 @@ int PC_func()
 int main() 
 {
     PC_func();
-
-    return 0;
-}
-
-int tmp_func()
-{
-    InterfaceUDP InetData(MAIN_IP, MAIN_PORT);
-    InterfaceUDP UDPSitl(MAVLINK_IP, MAVLINK_PORT);
-
-    FlyPlaneData lastReceivedData;
-
-    waitHeartBeat(UDPSitl);
-
-    while (true)
-    {
-        int length = InetData.readFlyPlaneData(lastReceivedData);
-
-        if (length > 0)
-            Do_SetWayPoints(UDPSitl, lastReceivedData.getCoords(), lastReceivedData.getPointCount());
-
-        usleep(1*100*1000);
-    }
 
     return 0;
 }

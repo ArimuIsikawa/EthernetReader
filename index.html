@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Карта (CartoDB) и изображение</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+<style>
+  html, body { height:100%; margin:0; padding:0; font-family:Arial, sans-serif; }
+  .tabs { display:flex; gap:8px; padding:8px; background:#f2f2f2; align-items:center; box-sizing:border-box; border-bottom:1px solid #ddd; }
+  .tabs button { padding:8px 12px; border:1px solid #ccc; background:white; cursor:pointer; border-radius:4px; }
+  .tabs button.active { background:#007acc; color:white; border-color:#007acc; }
+  .content { height: calc(100% - 56px); }
+  #panel-map, #panel-image { width:100%; height:100%; display:flex; flex-direction:column; box-sizing:border-box; }
+  .map-controls { padding:8px; display:flex; gap:8px; align-items:center; background:transparent; box-sizing:border-box; }
+  .send-btn { padding:8px 10px; border-radius:4px; border:1px solid #666; background:#eee; cursor:pointer; }
+  .info { margin-left:auto; font-size:13px; color:#222; padding-right:6px; }
+  #map { flex:1; min-height:200px; width:100%; }
+  #imgwrap { width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#111; box-sizing:border-box; }
+  #imgwrap img { max-width:100%; max-height:100%; display:block; }
+  #loading { color:white; text-align:center; padding:12px; }
+  @media (max-width:600px) { .tabs { gap:6px; padding:6px; } .map-controls { padding:6px; gap:6px; } }
+</style>
+</head>
+<body>
+<div class="tabs">
+  <button id="tab-map" class="active">Карта</button>
+  <button id="tab-image">Изображение</button>
+</div>
+
+<div class="content">
+  <div id="panel-map">
+    <div class="map-controls">
+      <button id="sendBtn" class="send-btn">Send</button>
+      <button id="clearBtn" class="send-btn">Clear</button>
+      <div class="info">Маркер(ов): <span id="count">0</span></div>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <div id="panel-image" style="display:none;">
+    <div id="imgwrap">
+      <div id="loading">Пробуем загрузить getted.png...</div>
+      <img id="theimage" src="" style="display:none"/>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const tabMapBtn = document.getElementById("tab-map");
+  const tabImageBtn = document.getElementById("tab-image");
+  const panelMap = document.getElementById("panel-map");
+  const panelImage = document.getElementById("panel-image");
+
+  tabMapBtn.onclick = () => {
+    tabMapBtn.classList.add("active");
+    tabImageBtn.classList.remove("active");
+    panelMap.style.display = "";
+    panelImage.style.display = "none";
+    setTimeout(() => { try { map.invalidateSize(); } catch(e){} }, 200);
+  };
+  tabImageBtn.onclick = () => {
+    tabImageBtn.classList.add("active");
+    tabMapBtn.classList.remove("active");
+    panelImage.style.display = "";
+    panelMap.style.display = "none";
+  };
+
+  // Leaflet map
+  const map = L.map('map', { zoomControl:true }).setView([55.753215, 37.622504], 5);
+
+  // CartoDB basemap (Voyager)
+  const cartoVoyager = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; CARTO',
+    maxZoom: 19
+  }).addTo(map);
+
+  let markers = [];
+  function updateCount(){ document.getElementById("count").textContent = markers.length; }
+
+  map.on('click', function(e){
+    const m = L.marker(e.latlng, {riseOnHover:true}).addTo(map);
+    m.on('contextmenu', function(ev){
+      map.removeLayer(m);
+      markers = markers.filter(x => x !== m);
+      updateCount();
+    });
+    markers.push(m);
+    updateCount();
+  });
+
+  document.getElementById("clearBtn").addEventListener("click", function(){
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+    updateCount();
+  });
+
+  document.getElementById("sendBtn").addEventListener("click", async function(){
+    const pts = markers.map(m => {
+      const latlng = m.getLatLng();
+      return { lat: Number(latlng.lat.toFixed(7)), lon: Number(latlng.lng.toFixed(7)) };
+    });
+    const payload = { points: pts, provider: "carto_voyager", ts: (new Date()).toISOString() };
+    try {
+      const resp = await fetch('/send', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (!resp.ok) throw new Error("Server returned " + resp.status);
+      const text = await resp.text();
+      alert("Отправлено: " + pts.length + " точек.\nОтвет сервера: " + text);
+    } catch (err) {
+      alert("Ошибка отправки: " + err);
+    }
+  });
+
+  // Image reload (getted.png in server root)
+  const imgEl = document.getElementById("theimage");
+  const loading = document.getElementById("loading");
+  function refreshImage(){
+    const url = '/getted.png?ts=' + Date.now();
+    const tmp = new Image();
+    tmp.onload = function(){
+      imgEl.src = url;
+      imgEl.style.display = "";
+      loading.style.display = "none";
+    };
+    tmp.onerror = function(){
+      imgEl.style.display = "none";
+      loading.style.display = "";
+      loading.textContent = "Файл 'getted.png' не найден в папке программы.";
+    };
+    tmp.src = url;
+  }
+  setInterval(refreshImage, 3000);
+  refreshImage();
+
+  // initial invalidate
+  setTimeout(() => { try { map.invalidateSize(); } catch(e){} }, 300);
+})();
+</script>
+</body>
+</html>

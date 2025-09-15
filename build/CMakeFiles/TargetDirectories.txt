@@ -1,0 +1,3 @@
+/home/centerbla/Desktop/PC_Ethernet/build/CMakeFiles/EthernetWriter.dir
+/home/centerbla/Desktop/PC_Ethernet/build/CMakeFiles/edit_cache.dir
+/home/centerbla/Desktop/PC_Ethernet/build/CMakeFiles/rebuild_cache.dir
