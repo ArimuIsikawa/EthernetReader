@@ -105,7 +105,7 @@ int InterfaceTCPClient::ConnectToServer()
     
     // Подключение к серверу
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-        perror("Connection Failed");
+        //perror("Connection Failed");
         close(sock);
         return -1;
     }

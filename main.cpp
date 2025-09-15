@@ -93,14 +93,12 @@ void Do_SetWayPoints(InterfaceUDP &sitl, WGS84Coord* coords, int count)
                         missionWPTPack(wp, coords[pointI], pointI);
                         mavlink_msg_mission_item_encode(255, 191, &msg, &wp);
                         sendMavlinkMessage(sitl, msg);
-                        std::cout << "Sent MISSION_ITEM_INT seq=" << pointI << std::endl;
                         break;
                     }
 
                     missionWPTPack(wp, coords[pointI], pointI + 1);
                     mavlink_msg_mission_item_encode(255, 191, &msg, &wp);
                     sendMavlinkMessage(sitl, msg);
-                    std::cout << "Sent MISSION_ITEM_INT seq=" << pointI + 1 << std::endl;
                     pointI += 1;
                     break;
                 }
@@ -209,7 +207,7 @@ WGS84Coord* tryReadCoords(int& count)
     }
 
     file.close();
-    remove(filename);
+    //remove(filename);
 
     return coords;
 }
@@ -225,11 +223,13 @@ void sendCoords(InterfaceTCPClient tmp)
     {
         coords = tryReadCoords(count);
         if (coords != nullptr)
+        {
             Data.setCoords(coords, count);
-        tmp.sendFlyPlaneData(Data);
+            tmp.sendFlyPlaneData(Data);
+        }
         count = 0;
 
-        std::this_thread::sleep_for(std::chrono::seconds(10));
+        std::this_thread::sleep_for(std::chrono::seconds(3));
     }
 
     delete coords;
@@ -272,8 +272,6 @@ int PC_func()
 {
     InterfaceTCPServer ImageRecv(TEST_IP, TEST_PORT);
     InterfaceTCPClient CoordsSend(TEST_IP, TEST_PORT + 1);
-
-    FlyPlaneData Data;
 
     std::thread sendThread(sendCoords, CoordsSend);
     std::thread recvThread(recvImage,  ImageRecv);

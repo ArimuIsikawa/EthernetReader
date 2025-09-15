@@ -157,7 +157,7 @@ INDEX_HTML = r"""<!doctype html>
   const imgEl = document.getElementById("theimage");
   const loading = document.getElementById("loading");
   function refreshImage(){
-    const url = '/getted.png?ts=' + Date.now();
+    const url = 'build/getted.png?ts=' + Date.now();
     const tmp = new Image();
     tmp.onload = function(){
       imgEl.src = url;
