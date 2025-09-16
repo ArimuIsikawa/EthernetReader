@@ -62,7 +62,9 @@
         "optional": "cpp",
         "semaphore": "cpp",
         "fstream": "cpp",
-        "__bit_reference": "cpp"
+        "__bit_reference": "cpp",
+        "deque": "cpp",
+        "cinttypes": "cpp"
     },
     "files.exclude": {
         "**/*.rpyc": true,

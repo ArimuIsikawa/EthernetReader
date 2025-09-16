@@ -64,17 +64,12 @@ void Do_SetWayPoints(InterfaceUDP &sitl, WGS84Coord* coords, int count)
     mavlink_msg_mission_count_pack(255, MAV_COMP_ID_ONBOARD_COMPUTER, &msg, 1, 1, count, MAV_MISSION_TYPE_MISSION);
     sendMavlinkMessage(sitl, msg);
 
-    int pointI = 0;
     bool finished = false;
 
-    while (pointI < count - 1)
+    while (finished != true)
     {
-        if (finished == true)
-            break;
-
         ssize_t n = sitl.recvFrom(buf, sizeof(buf));
-        if (n <= 0)
-            continue;
+        if (n <= 0) continue;
 
         for (ssize_t i = 0; i < n; ++i) 
         {
@@ -82,33 +77,32 @@ void Do_SetWayPoints(InterfaceUDP &sitl, WGS84Coord* coords, int count)
             {
                 switch (msg.msgid)
                 {
-                case MAVLINK_MSG_ID_MISSION_REQUEST: {
+                case MAVLINK_MSG_ID_MISSION_REQUEST:
+                {
                     mavlink_mission_request_int_t req;
                     mavlink_msg_mission_request_int_decode(&msg, &req);
                     uint16_t seq = req.seq;
-
-                    //std::cout << seq << "\n";
-
                     mavlink_mission_item_t wp;
+
+                    std::cout << seq << "\n";
 
                     if (seq == 0)
                     {
-                        missionWPTPack(wp, coords[pointI], pointI);
+                        missionWPTPack(wp, coords[seq], seq);
                         mavlink_msg_mission_item_encode(255, 191, &msg, &wp);
                         sendMavlinkMessage(sitl, msg);
                         break;
                     }
 
-                    missionWPTPack(wp, coords[pointI], pointI + 1);
+                    missionWPTPack(wp, coords[seq - 1], seq);
                     mavlink_msg_mission_item_encode(255, 191, &msg, &wp);
                     sendMavlinkMessage(sitl, msg);
-                    pointI += 1;
                     break;
                 }
-                case MAVLINK_MSG_ID_MISSION_ACK: {
+                case MAVLINK_MSG_ID_MISSION_ACK: 
+                {
                     mavlink_mission_ack_t ack;
                     mavlink_msg_mission_ack_decode(&msg, &ack);
-                    //std::cout << "Received MISSION_ACK: type=" << static_cast<int>(ack.type) << std::endl;
 
                     if (ack.type == MAV_MISSION_ACCEPTED)
                         std::cout << "Mission uploaded successfully (ACCEPTED)." << std::endl;
@@ -118,8 +112,7 @@ void Do_SetWayPoints(InterfaceUDP &sitl, WGS84Coord* coords, int count)
 
                     break;
                 }
-                default:
-                    break;
+                default: break;
                 }
             }
         }
