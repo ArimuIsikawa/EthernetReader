@@ -2,7 +2,6 @@
 #define FLYPLANEDATA_H
 
 #include <cstddef> // для size_t
-#include <png.h>
 
 class WGS84Coord
 {
@@ -29,16 +28,10 @@ public:
     void setCoords(WGS84Coord* newCoords, int count);
     WGS84Coord* getCoords() const;
     int getPointCount() const;
-    void setImage(const char* path);
-    unsigned char* getImage();
 
     unsigned char* Serialization();
     bool DeSerialization(unsigned char* data, size_t data_size);
     size_t getSerializedSize() const;
-
-    bool loadPNG(const char* filename);
-    bool savePNG(const char* filename);
-    size_t getImageSize() const;
 };
 
 #endif // FLYPLANEDATA_H

@@ -163,7 +163,7 @@ void sendImage(InterfaceTCPClient tmp)
 		tmp.sendData(image, n);
 
         delete[] image;
-		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+		std::this_thread::sleep_for(std::chrono::seconds(1));
 	}
 }
 
