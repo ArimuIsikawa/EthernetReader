@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Карта (CartoDB) и изображение</title>
+<title>Карта (CartoDB) — маршруты + MAVLink/UDP + TCP image</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
@@ -15,14 +15,24 @@
   .tabs button.active { background:#007acc; color:white; border-color:#007acc; }
   .content { height: calc(100% - 56px); }
   #panel-map, #panel-image { width:100%; height:100%; display:flex; flex-direction:column; box-sizing:border-box; }
-  .map-controls { padding:8px; display:flex; gap:8px; align-items:center; background:transparent; box-sizing:border-box; }
+  .map-controls { padding:8px; display:flex; gap:8px; align-items:center; background:transparent; box-sizing:border-box; flex-wrap:wrap; }
   .send-btn { padding:8px 10px; border-radius:4px; border:1px solid #666; background:#eee; cursor:pointer; }
   .info { margin-left:auto; font-size:13px; color:#222; padding-right:6px; }
   #map { flex:1; min-height:200px; width:100%; }
   #imgwrap { width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#111; box-sizing:border-box; }
   #imgwrap img { max-width:100%; max-height:100%; display:block; }
   #loading { color:white; text-align:center; padding:12px; }
-  @media (max-width:600px) { .tabs { gap:6px; padding:6px; } .map-controls { padding:6px; gap:6px; } }
+  .routes { display:flex; gap:8px; align-items:center; }
+  .route-slot { display:flex; flex-direction:column; gap:6px; padding:6px; border:1px solid #ddd; border-radius:6px; min-width:140px; background:#fff; }
+  .route-slot .row { display:flex; gap:6px; align-items:center; }
+  .route-slot button { padding:6px 8px; font-size:13px; cursor:pointer; }
+  .route-slot .meta { font-size:12px; color:#333; }
+  .color-dot { width:16px; height:16px; border-radius:4px; border:1px solid rgba(0,0,0,0.12); display:inline-block; margin-right:6px; vertical-align:middle; }
+  .marker-number { display:inline-block; color:#fff; border-radius:50%; width:24px; height:24px; line-height:24px; text-align:center; border:2px solid white; box-shadow:0 0 0 1px rgba(0,0,0,0.15); font-weight:700; }
+  .udp-status { font-size:13px; margin-left:8px; padding:6px 8px; border-radius:6px; border:1px solid #ddd; background:#fff; }
+  .udp-status.ok { border-color:#2a9d8f; color:#0a6; }
+  .udp-status.none { color:#999; }
+  @media (max-width:800px) { .map-controls { gap:6px; padding:6px; } .route-slot { min-width:100px; } }
 </style>
 </head>
 <body>
@@ -36,14 +46,26 @@
     <div class="map-controls">
       <button id="sendBtn" class="send-btn">Send</button>
       <button id="clearBtn" class="send-btn">Clear</button>
+
+      <div class="routes" id="routes"></div>
+
       <div class="info">Маркер(ов): <span id="count">0</span></div>
+
+      <div style="margin-left:12px;">
+        <span>UDP port: <strong id="udp-port">14558</strong></span>
+        <span id="udp-status" class="udp-status none">no data</span>
+        <label style="margin-left:8px;"><input type="checkbox" id="udp-enable" checked/> live</label>
+        <br/>
+        <span>Image TCP port: <strong id="img-port">14519</strong></span>
+      </div>
     </div>
+
     <div id="map"></div>
   </div>
 
   <div id="panel-image" style="display:none;">
     <div id="imgwrap">
-      <div id="loading">Пробуем загрузить getted.png...</div>
+      <div id="loading">Пробуем загрузить image.png...</div>
       <img id="theimage" src="" style="display:none"/>
     </div>
   </div>
@@ -51,6 +73,9 @@
 
 <script>
 (function(){
+  const routeColors = ["#e34a4a", "#2a9d8f", "#f4a261"];
+
+  // Tabs
   const tabMapBtn = document.getElementById("tab-map");
   const tabImageBtn = document.getElementById("tab-image");
   const panelMap = document.getElementById("panel-map");
@@ -70,77 +95,215 @@
     panelMap.style.display = "none";
   };
 
-  // Leaflet map
+  // Map setup
   const map = L.map('map', { zoomControl:true }).setView([55.753215, 37.622504], 5);
-
-  // CartoDB basemap (Voyager)
   const cartoVoyager = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; CARTO',
-    maxZoom: 19
+    attribution: '&copy; CARTO', maxZoom: 19
   }).addTo(map);
 
+  // Markers array: items { marker: L.marker, lat, lon, color }
   let markers = [];
-  function updateCount(){ document.getElementById("count").textContent = markers.length; }
+  function refreshCount(){ document.getElementById("count").textContent = markers.length; }
 
-  map.on('click', function(e){
-    const m = L.marker(e.latlng, {riseOnHover:true}).addTo(map);
-    m.on('contextmenu', function(ev){
-      map.removeLayer(m);
-      markers = markers.filter(x => x !== m);
-      updateCount();
-    });
-    markers.push(m);
-    updateCount();
-  });
+  function createNumberedMarker(latlng, number, color) {
+    const html = '<div class="marker-number" style="background:' + color + ';">' + String(number) + '</div>';
+    const icon = L.divIcon({ className: '', html: html, iconSize: [24,24], iconAnchor: [12,12] });
+    const m = L.marker(latlng, { icon: icon, riseOnHover:true }).addTo(map);
+    m.on('contextmenu', function(){ removeMarkerObject(m); });
+    return m;
+  }
+  function renumberAll() {
+    for (let i=0;i<markers.length;i++){
+      const item = markers[i];
+      const num = i+1;
+      const html = '<div class="marker-number" style="background:' + item.color + ';">' + String(num) + '</div>';
+      const icon = L.divIcon({ className:'', html: html, iconSize:[24,24], iconAnchor:[12,12] });
+      item.marker.setIcon(icon);
+    }
+    refreshCount();
+  }
+  function addMarkerAt(latlng, color) {
+    const number = markers.length + 1;
+    const col = color || routeColors[0];
+    const m = createNumberedMarker(latlng, number, col);
+    markers.push({ marker: m, lat: latlng.lat, lon: latlng.lng, color: col });
+    refreshCount();
+  }
+  function removeMarkerObject(lmarker) {
+    let idx = -1;
+    for (let i=0;i<markers.length;i++){ if (markers[i].marker === lmarker){ idx = i; break; } }
+    if (idx >= 0){
+      map.removeLayer(markers[idx].marker);
+      markers.splice(idx,1);
+      renumberAll();
+    }
+  }
+  map.on('click', function(e){ addMarkerAt(e.latlng, routeColors[0]); });
 
-  document.getElementById("clearBtn").addEventListener("click", function(){
-    markers.forEach(m => map.removeLayer(m));
-    markers = [];
-    updateCount();
-  });
+  function clearMarkers() { markers.forEach(it => { try { map.removeLayer(it.marker); } catch(e){} }); markers = []; refreshCount(); }
+  document.getElementById("clearBtn").addEventListener("click", clearMarkers);
 
+  // Send -> server writes coords.txt
   document.getElementById("sendBtn").addEventListener("click", async function(){
-    const pts = markers.map(m => {
-      const latlng = m.getLatLng();
-      return { lat: Number(latlng.lat.toFixed(7)), lon: Number(latlng.lng.toFixed(7)) };
-    });
+    const pts = markers.map(it => ({ lat: Number(it.lat.toFixed(7)), lon: Number(it.lon.toFixed(7)) }));
     const payload = { points: pts, provider: "carto_voyager", ts: (new Date()).toISOString() };
     try {
       const resp = await fetch('/send', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type':'application/json'},
         body: JSON.stringify(payload)
       });
       if (!resp.ok) throw new Error("Server returned " + resp.status);
-      const text = await resp.text();
-      alert("Отправлено: " + pts.length + " точек.\nОтвет сервера: " + text);
+      const txt = await resp.text();
+      alert("Отправлено: " + pts.length + " точек.\nОтвет сервера: " + txt);
+      fetchRouteMetaAndUpdateUI();
     } catch (err) {
       alert("Ошибка отправки: " + err);
     }
   });
 
-  // Image reload (getted.png in server root)
+  // Routes UI (3 slots)
+  const routesContainer = document.getElementById("routes");
+  function makeSlotElement(slot, color) {
+    const wrap = document.createElement('div');
+    wrap.className = 'route-slot';
+    wrap.id = 'route-slot-' + slot;
+    const colorDotHtml = '<span class="color-dot" style="background:' + color + ';"></span>';
+    wrap.innerHTML = `
+      <div style="font-weight:700">${colorDotHtml} Route ${slot}</div>
+      <div class="row">
+        <button data-act="save" data-slot="${slot}">Save</button>
+        <button data-act="load" data-slot="${slot}">Load</button>
+        <button data-act="del"  data-slot="${slot}">Delete</button>
+      </div>
+      <div class="meta" id="route-meta-${slot}">—</div>
+    `;
+    wrap.querySelector('[data-act="save"]').addEventListener('click', () => saveRouteSlot(slot));
+    wrap.querySelector('[data-act="load"]').addEventListener('click', () => loadRouteSlot(slot));
+    wrap.querySelector('[data-act="del"]').addEventListener('click', () => deleteRouteSlot(slot));
+    return wrap;
+  }
+  for (let s=1;s<=3;s++){ routesContainer.appendChild(makeSlotElement(s, routeColors[s-1])); }
+
+  async function saveRouteSlot(slot) {
+    const pts = markers.map(it => ({ lat: Number(it.lat.toFixed(7)), lon: Number(it.lon.toFixed(7)) }));
+    const color = routeColors[slot-1] || routeColors[0];
+    try {
+      const resp = await fetch('/route/save?slot=' + slot, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ points: pts, color: color })
+      });
+      if (!resp.ok) throw new Error("Server " + resp.status);
+      const text = await resp.text();
+      alert("Saved to slot " + slot + ".\n" + text);
+      fetchRouteMetaAndUpdateUI();
+    } catch (e) { alert("Save failed: " + e); }
+  }
+
+  async function loadRouteSlot(slot) {
+    try {
+      const resp = await fetch('/route/load?slot=' + slot);
+      if (resp.status === 404) { alert("Route slot " + slot + " is empty."); return; }
+      if (!resp.ok) throw new Error("Server " + resp.status);
+      const data = await resp.json();
+      clearMarkers();
+      const pts = data.points || [];
+      const color = data.color || routeColors[slot-1];
+      for (let p of pts){ addMarkerAt({lat: p.lat, lng: p.lon}, color); }
+      alert("Loaded route " + slot + " (" + pts.length + " points).");
+    } catch (e) { alert("Load failed: " + e); }
+  }
+
+  async function deleteRouteSlot(slot) {
+    if (!confirm("Удалить маршрут в слоте " + slot + "?")) return;
+    try {
+      const resp = await fetch('/route/delete?slot=' + slot, { method: 'POST' });
+      if (!resp.ok) throw new Error("Server " + resp.status);
+      const txt = await resp.text();
+      alert("Deleted slot " + slot + ".\n" + txt);
+      fetchRouteMetaAndUpdateUI();
+    } catch (e) { alert("Delete failed: " + e); }
+  }
+
+  async function fetchRouteMetaAndUpdateUI(){
+    try {
+      const resp = await fetch('/route/meta');
+      if (!resp.ok) throw new Error("Server " + resp.status);
+      const meta = await resp.json();
+      for (let s=1;s<=3;s++){
+        const el = document.getElementById('route-meta-' + s);
+        const n = meta[String(s)] || 0;
+        el.textContent = n > 0 ? (n + " points saved") : "empty";
+      }
+    } catch (e) { console.warn("Failed to fetch route meta:", e); }
+  }
+  fetchRouteMetaAndUpdateUI();
+
+  // UDP / MAVLink live marker
+  let udpMarker = null;
+  let udpLastTs = null;
+  const udpPortLabel = document.getElementById("udp-port");
+  udpPortLabel.textContent = "14558";
+  const udpStatusEl = document.getElementById("udp-status");
+  const udpEnableCheckbox = document.getElementById("udp-enable");
+  const imgPortLabel = document.getElementById("img-port");
+  imgPortLabel.textContent = "14519";
+
+  async function pollUdpLast(){
+    if (!udpEnableCheckbox.checked) {
+      udpStatusEl.className = "udp-status none";
+      udpStatusEl.textContent = "live paused";
+      return;
+    }
+    try {
+      const resp = await fetch('/udp/last');
+      if (resp.status === 204) {
+        udpStatusEl.className = "udp-status none";
+        udpStatusEl.textContent = "no data";
+        return;
+      }
+      if (!resp.ok) throw new Error("Server " + resp.status);
+      const data = await resp.json(); // {lat,lon,ts,raw,from}
+      if (typeof data.lat === 'undefined' || typeof data.lon === 'undefined') {
+        udpStatusEl.className = "udp-status none";
+        udpStatusEl.textContent = "bad data";
+        return;
+      }
+      udpStatusEl.className = "udp-status ok";
+      udpStatusEl.textContent = "live " + (data.from || "") + " • " + data.ts;
+      if (udpLastTs !== data.ts || !udpMarker) {
+        udpLastTs = data.ts;
+        const latlng = [data.lat, data.lon];
+        if (!udpMarker) {
+          udpMarker = L.circleMarker(latlng, { radius:8, fillColor: '#1f77b4', color:'#fff', weight:2, fillOpacity:1 }).addTo(map);
+          udpMarker.bindTooltip("UDP live", {permanent:true, direction:'right', className:'udp-tooltip'}).openTooltip();
+        } else {
+          udpMarker.setLatLng(latlng);
+        }
+      }
+    } catch (e) {
+      udpStatusEl.className = "udp-status none";
+      udpStatusEl.textContent = "UDP poll err";
+    }
+  }
+
+  setInterval(pollUdpLast, 500);
+  pollUdpLast();
+
+  // Image reload (image.png in server root)
   const imgEl = document.getElementById("theimage");
   const loading = document.getElementById("loading");
   function refreshImage(){
-    const url = 'build/getted.png?ts=' + Date.now();
+    const url = '/image.png?ts=' + Date.now();
     const tmp = new Image();
-    tmp.onload = function(){
-      imgEl.src = url;
-      imgEl.style.display = "";
-      loading.style.display = "none";
-    };
-    tmp.onerror = function(){
-      imgEl.style.display = "none";
-      loading.style.display = "";
-      loading.textContent = "Файл 'getted.png' не найден в папке программы.";
-    };
+    tmp.onload = function(){ imgEl.src = url; imgEl.style.display = ""; loading.style.display = "none"; };
+    tmp.onerror = function(){ imgEl.style.display = "none"; loading.style.display = ""; loading.textContent = "Файл 'image.png' не найден в папке программы."; };
     tmp.src = url;
   }
   setInterval(refreshImage, 3000);
   refreshImage();
 
-  // initial invalidate
   setTimeout(() => { try { map.invalidateSize(); } catch(e){} }, 300);
 })();
 </script>
