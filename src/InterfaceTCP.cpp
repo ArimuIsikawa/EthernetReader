@@ -101,6 +101,18 @@ InterfaceTCPClient::~InterfaceTCPClient()
 
 int InterfaceTCPClient::sendData(unsigned char *data, size_t dataSize)
 {
+    for (int i = 0; i < 10; ++i)
+    {
+        if (sock > 0)
+            break;
+
+        // Попытка подключения
+        if (sock < 0)
+            sock = ConnectToServer();
+        else
+            usleep(1*100*1000);
+    }
+    
     if (sock > 0) 
         return send(sock, data, dataSize, MSG_NOSIGNAL);
     else

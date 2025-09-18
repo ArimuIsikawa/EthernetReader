@@ -43,7 +43,7 @@ int FlyPlaneData::getPointCount() const
 
 void FlyPlaneData::xorEncryptDecrypt(unsigned char* data, size_t size) 
 {
-    if (!data || size == 0 || !key) return;
+    if (!data || size == 0) return;
 
     size_t keyLength = strlen(key);
 
