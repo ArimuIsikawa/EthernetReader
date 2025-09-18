@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(UAV_Ethernet LANGUAGES CXX)
+project(PC_Ethernet LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-#add_definitions(-w)
+add_definitions(-w)
 
 include_directories(
     include/

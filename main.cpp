@@ -1,8 +1,8 @@
-#include "UAV_Funcs.h"
+#include "PC_Funcs.h"
 
 int main() 
 {
-    UAV_func();
+    PC_func();
 
     return 0;
 }

@@ -11,10 +11,14 @@
 #include <iostream>
 #include <fstream>
 
-void recvImage(InterfaceTCPServer tmp);
-
 WGS84Coord* tryReadCoords(int& count);
 
 bool savePNG(unsigned char* image, int imageSize, const char* filename);
+
+void sendCoords(InterfaceTCPClient tmp);
+
+void recvImage(InterfaceTCPServer tmp);
+
+void PC_func(void);
 
 #endif
