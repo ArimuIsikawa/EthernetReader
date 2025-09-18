@@ -36,7 +36,7 @@ WGS84Coord* tryReadCoords(int& count)
     }
 
     file.close();
-    //remove(filename);
+    remove(filename);
 
     return coords;
 }
@@ -85,6 +85,8 @@ void recvImage(InterfaceTCPServer tmp)
     {
 		uint8_t* buffer = new uint8_t[BUFFER_SIZE]; 
         auto imageSize = tmp.recvData(buffer);
+        std::cout << imageSize << std::endl;
+        
 		savePNG(buffer, imageSize, "getted.png");
 
 		delete[] buffer;
