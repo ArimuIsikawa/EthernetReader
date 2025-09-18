@@ -1,11 +1,16 @@
 #ifndef UAV_FUNCS_H
 #define UAV_FUNCS_H
 
-#include "FlyIncludes.h"
+#include "FlyDefines.h"
+#include "FlyPlaneData.h"
+#include "InterfaceUDP.h"
+#include "InterfaceTCP.h"
 
-mavlink_message_t msg;
-mavlink_status_t status;
-uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+#include <chrono>
+#include <thread>
+
+#include "mavlink.h"
+#include "ardupilotmega.h"
 
 void missionCountPack(mavlink_message_t &msg, int count);
 
@@ -16,6 +21,8 @@ void sendMavlinkMessage(InterfaceUDP &sitl, const mavlink_message_t& msg);
 void Do_SetWayPoints(InterfaceUDP &sitl, WGS84Coord* coords, int count);
 
 void waitHeartBeat(InterfaceUDP &sitl);
+
+unsigned char* getImage(char* path);
 
 void sendImage(InterfaceTCPClient tmp);
 

@@ -37,6 +37,8 @@ void sendMavlinkMessage(InterfaceUDP &sitl, const mavlink_message_t& msg)
 void Do_SetWayPoints(InterfaceUDP &sitl, WGS84Coord* coords, int count) 
 {
     mavlink_message_t msg;
+    mavlink_status_t status;
+    uint8_t buf[MAVLINK_MAX_PACKET_LEN];
 
     count += 1;
 
@@ -107,6 +109,10 @@ void Do_SetWayPoints(InterfaceUDP &sitl, WGS84Coord* coords, int count)
 
 void waitHeartBeat(InterfaceUDP &sitl)
 {
+    mavlink_message_t msg;
+    mavlink_status_t status;
+    uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+
     while (true) 
     {
         ssize_t n = sitl.recvFrom(buf, sizeof(buf));
@@ -127,14 +133,36 @@ void waitHeartBeat(InterfaceUDP &sitl)
     }
 }
 
+#include <fstream>
+
+unsigned char* getImage(char *filename, int& imageSize)
+{
+    std::ifstream file(filename, std::ios::binary);
+    if (!file) {
+        return nullptr;
+    }
+
+	// Определяем размер файла
+    file.seekg(0, std::ios::end);
+    imageSize = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    // Выделяем память и читаем данные
+    unsigned char* image = new unsigned char[imageSize];
+    file.read(reinterpret_cast<char*>(image), imageSize);
+
+	return image;
+}
+
 void sendImage(InterfaceTCPClient tmp)
 {
 	while (true)
 	{
-		//TODO GetImage
-		unsigned char* image;
-		size_t n = 0;
-		//tmp.sendData(image, 0);
+		int n = 0;
+		unsigned char* image = getImage("drone.png", n);
+		tmp.sendData(image, n);
+
+        delete[] image;
 		std::this_thread::sleep_for(std::chrono::milliseconds(250));
 	}
 }
@@ -143,6 +171,8 @@ void recvCoords(InterfaceTCPServer tmp)
 {
     InterfaceUDP Autopilot(MAVLINK_IP, MAVLINK_PORT);
     waitHeartBeat(Autopilot);
+
+    mavlink_message_t msg;
 
     #ifdef __linux__
         mavlink_msg_command_long_pack(255, 191, &msg, 1, 1, MAV_CMD_COMPONENT_ARM_DISARM, 0, 1, 0, 0, 0, 0, 0, 0);

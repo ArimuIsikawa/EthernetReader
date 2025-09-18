@@ -5,7 +5,7 @@ project(UAV_Ethernet LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_definitions(-w)
+#add_definitions(-w)
 
 include_directories(
     include/
@@ -25,7 +25,6 @@ set(HEADERS
     include/PC_Funcs.h
     include/UAV_Funcs.h
     include/FlyDefines.h
-    include/FlyIncludes.h
     include/FlyPlaneData.h
     include/InterfaceUDP.h
     include/InterfaceTCP.h

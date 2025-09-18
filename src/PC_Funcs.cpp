@@ -41,6 +41,21 @@ WGS84Coord* tryReadCoords(int& count)
     return coords;
 }
 
+bool savePNG(unsigned char *image, int imageSize, const char *filename)
+{
+    if (!image || imageSize == 0) {
+        return false;
+    }
+
+    std::ofstream file(filename, std::ios::binary);
+    if (!file) {
+        return false;
+    }
+
+    file.write(reinterpret_cast<const char*>(image), imageSize);
+    return file.good();
+}
+
 void sendCoords(InterfaceTCPClient tmp)
 {
     FlyPlaneData Data;
@@ -68,13 +83,16 @@ void recvImage(InterfaceTCPServer tmp)
 {
     while (true)
     {
-        FlyPlaneData Data;
-        tmp.readFlyPlaneData(Data);
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+		uint8_t* buffer = new uint8_t[BUFFER_SIZE]; 
+        auto imageSize = tmp.recvData(buffer);
+		savePNG(buffer, imageSize, "getted.png");
+
+		delete[] buffer;
+        std::this_thread::sleep_for(std::chrono::seconds(10));
     }
 }
 
-int PC_func()
+void PC_func(void)
 {
     InterfaceTCPServer ImageRecv(TEST_IP, TEST_PORT);
     InterfaceTCPClient CoordsSend(TEST_IP, TEST_PORT + 1);

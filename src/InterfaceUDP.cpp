@@ -23,7 +23,7 @@ InterfaceUDP::~InterfaceUDP()
 
 int InterfaceUDP::sendTo(uint8_t buffer[], uint16_t len)
 {
-    sendto(handler, buffer, len, 0, (sockaddr*)&sent_addr, sizeof(sent_addr));
+    return sendto(handler, buffer, len, 0, (sockaddr*)&sent_addr, sizeof(sent_addr));
 }
 
 ssize_t InterfaceUDP::recvFrom(uint8_t buffer[], uint16_t len)

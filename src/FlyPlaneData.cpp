@@ -41,16 +41,6 @@ int FlyPlaneData::getPointCount() const
     return pointCount; 
 }
 
-void FlyPlaneData::setImage(const char* path)
-{
-    loadPNG(path);
-}
-
-unsigned char *FlyPlaneData::getImage()
-{
-    return image;
-}
-
 void FlyPlaneData::xorEncryptDecrypt(unsigned char* data, size_t size) 
 {
     if (!data || size == 0 || !key) return;
@@ -128,46 +118,4 @@ size_t FlyPlaneData::getSerializedSize() const {
     size_t totalSize = sizeof(int); // pointCount
     totalSize += sizeof(WGS84Coord) * pointCount;
     return totalSize;
-}
-
-bool FlyPlaneData::loadPNG(const char* filename) {
-    std::ifstream file(filename, std::ios::binary);
-    if (!file) {
-        return false;
-    }
-
-    // Освобождаем старые данные
-    delete[] image;
-    image = nullptr;
-    imageSize = 0;
-
-    // Определяем размер файла
-    file.seekg(0, std::ios::end);
-    imageSize = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    // Выделяем память и читаем данные
-    image = new unsigned char[imageSize];
-    file.read(reinterpret_cast<char*>(image), imageSize);
-
-    return file.good();
-}
-
-bool FlyPlaneData::savePNG(const char* filename)
-{
-    if (!image || imageSize == 0) {
-        return false;
-    }
-
-    std::ofstream file(filename, std::ios::binary);
-    if (!file) {
-        return false;
-    }
-
-    file.write(reinterpret_cast<const char*>(image), imageSize);
-    return file.good();
-}
-
-size_t FlyPlaneData::getImageSize() const {
-    return imageSize;
 }

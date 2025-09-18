@@ -18,8 +18,6 @@ class FlyPlaneData
 private:
     int pointCount;
     WGS84Coord* coords;
-    size_t imageSize;
-    unsigned char* image;
     const char* key = "uav";
 
     void xorEncryptDecrypt(unsigned char* data, size_t size);

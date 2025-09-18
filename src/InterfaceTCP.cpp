@@ -62,7 +62,6 @@ int InterfaceTCPServer::readFlyPlaneData(FlyPlaneData &data)
         memcpy(received_data, buffer, bytesReceived);
 
         data.DeSerialization(received_data, bytesReceived);
-        data.savePNG("getted.png");
         
         delete[] received_data;
     }
@@ -92,7 +91,10 @@ InterfaceTCPClient::~InterfaceTCPClient()
 
 int InterfaceTCPClient::sendData(unsigned char *data, size_t dataSize)
 {
-    if (sock > 0) return send(sock, data, dataSize, MSG_NOSIGNAL);
+    if (sock > 0) 
+        return send(sock, data, dataSize, MSG_NOSIGNAL);
+    else
+        return 0;
 }
 
 int InterfaceTCPClient::ConnectToServer()
