@@ -35,6 +35,11 @@ InterfaceTCPServer::~InterfaceTCPServer()
     if (client_fd > 0) close(client_fd);
 }
 
+int InterfaceTCPServer::recvData(uint8_t buffer[])
+{
+    return recv(client_fd, buffer, BUFFER_SIZE, 0);
+}
+
 int InterfaceTCPServer::readFlyPlaneData(FlyPlaneData &data)
 {
     if (client_fd <= 0) 
@@ -83,6 +88,11 @@ InterfaceTCPClient::InterfaceTCPClient(const char *ip, const int port)
 InterfaceTCPClient::~InterfaceTCPClient()
 {
     if (sock > 0) close(sock);
+}
+
+int InterfaceTCPClient::sendData(unsigned char *data, size_t dataSize)
+{
+    if (sock > 0) return send(sock, data, dataSize, MSG_NOSIGNAL);
 }
 
 int InterfaceTCPClient::ConnectToServer()

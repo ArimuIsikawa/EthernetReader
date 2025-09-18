@@ -21,6 +21,7 @@ public:
     InterfaceTCPServer(const char* ip, const int port);
     ~InterfaceTCPServer();
 
+    int recvData(uint8_t buffer[]);
     int readFlyPlaneData(FlyPlaneData &data);
 };
 
@@ -36,6 +37,7 @@ public:
     InterfaceTCPClient(const char* ip, const int port);
 	~InterfaceTCPClient();
 
+    int sendData(unsigned char* data, size_t dataSize);
     int ConnectToServer();
     int sendFlyPlaneData(FlyPlaneData& data);
 };

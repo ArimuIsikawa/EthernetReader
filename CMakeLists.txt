@@ -14,12 +14,18 @@ include_directories(
 )
 
 set(SOURCES
+    src/PC_Funcs.cpp
+    src/UAV_Funcs.cpp
     src/FlyPlaneData.cpp
     src/InterfaceUDP.cpp
     src/InterfaceTCP.cpp
 )
 
 set(HEADERS
+    include/PC_Funcs.h
+    include/UAV_Funcs.h
+    include/FlyDefines.h
+    include/FlyIncludes.h
     include/FlyPlaneData.h
     include/InterfaceUDP.h
     include/InterfaceTCP.h

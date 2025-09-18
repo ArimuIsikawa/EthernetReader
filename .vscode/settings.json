@@ -64,7 +64,11 @@
         "fstream": "cpp",
         "__bit_reference": "cpp",
         "deque": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "numeric": "cpp",
+        "numbers": "cpp",
+        "typeindex": "cpp",
+        "variant": "cpp"
     },
     "files.exclude": {
         "**/*.rpyc": true,
