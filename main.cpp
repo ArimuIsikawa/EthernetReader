@@ -105,7 +105,14 @@ void Do_SetWayPoints(InterfaceUDP &sitl, WGS84Coord* coords, int count)
                     mavlink_msg_mission_ack_decode(&msg, &ack);
 
                     if (ack.type == MAV_MISSION_ACCEPTED)
+                    {
                         std::cout << "Mission uploaded successfully (ACCEPTED)." << std::endl;
+                        mavlink_msg_mission_set_current_pack(255, 191, &msg, 1, 1, 0);
+                        sendMavlinkMessage(sitl, msg);
+
+                        mavlink_msg_command_long_pack(255, 191, &msg, 1, 1, 300, 0, 0.0f, 0, 0, 0, 0, 0, 0); // MAV_CMD_MISSION_START = 300
+                        sendMavlinkMessage(sitl, msg);
+                    }
                     else
                         std::cerr << "Mission not accepted, type=" << static_cast<int>(ack.type) << std::endl;
                     finished = true;
@@ -232,10 +239,26 @@ void sendCoords(InterfaceTCPClient tmp)
     coords = nullptr;
 }
 
+#include "ardupilotmega.h"
+
 void recvCoords(InterfaceTCPServer tmp)
 {
     InterfaceUDP Autopilot(MAVLINK_IP, MAVLINK_PORT);
     waitHeartBeat(Autopilot);
+
+    #ifdef __linux__
+        mavlink_msg_command_long_pack(255, 191, &msg, 1, 1, MAV_CMD_COMPONENT_ARM_DISARM, 0, 1, 0, 0, 0, 0, 0, 0);
+        sendMavlinkMessage(Autopilot, msg);
+        usleep(1000*1000);
+
+        mavlink_msg_command_long_pack(255, 191, &msg, 1, 1, MAV_CMD_DO_SET_MODE, 0, 209, 4, 0, 0, 0, 0, 0);
+        sendMavlinkMessage(Autopilot, msg);
+        usleep(1000*1000);
+
+        mavlink_msg_command_long_pack(255, 191, &msg, 1, 1, MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 5);
+        sendMavlinkMessage(Autopilot, msg);
+        usleep(1000*1000);
+    #endif
 
     while (true)
     {
