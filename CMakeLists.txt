@@ -14,7 +14,7 @@ include_directories(
 )
 
 set(SOURCES
-    src/PC_Funcs.cpp
+    #src/PC_Funcs.cpp
     src/UAV_Funcs.cpp
     src/FlyPlaneData.cpp
     src/InterfaceUDP.cpp
@@ -22,7 +22,7 @@ set(SOURCES
 )
 
 set(HEADERS
-    include/PC_Funcs.h
+    #include/PC_Funcs.h
     include/UAV_Funcs.h
     include/FlyDefines.h
     include/FlyPlaneData.h

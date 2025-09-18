@@ -8,7 +8,6 @@ WGS84Coord* tryReadCoords(int& count)
     
     // Проверяем, удалось ли открыть файл
     if (!file.is_open()) {
-        std::cerr << "Ошибка: не удалось открыть файл " << filename << std::endl;
         return nullptr;
     }
     
@@ -37,6 +36,7 @@ WGS84Coord* tryReadCoords(int& count)
 
     file.close();
     remove(filename);
+    std::cout << "Coords sended\n";
 
     return coords;
 }
@@ -85,12 +85,12 @@ void recvImage(InterfaceTCPServer tmp)
     {
 		uint8_t* buffer = new uint8_t[BUFFER_SIZE]; 
         auto imageSize = tmp.recvData(buffer);
-        std::cout << imageSize << std::endl;
-        
-		savePNG(buffer, imageSize, "getted.png");
+
+		if (imageSize > 0)
+		    savePNG(buffer, imageSize, "getted.png");
 
 		delete[] buffer;
-        std::this_thread::sleep_for(std::chrono::seconds(10));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
 

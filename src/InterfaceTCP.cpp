@@ -37,10 +37,13 @@ InterfaceTCPServer::~InterfaceTCPServer()
 
 int InterfaceTCPServer::recvData(uint8_t buffer[])
 {
-    return recv(client_fd, buffer, BUFFER_SIZE, 0);
+    if (ConnectToClient())
+        return recv(client_fd, buffer, BUFFER_SIZE, 0);
+    else
+        return -1;
 }
 
-int InterfaceTCPServer::readFlyPlaneData(FlyPlaneData &data)
+bool InterfaceTCPServer::ConnectToClient()
 {
     if (client_fd <= 0) 
     {
@@ -48,10 +51,17 @@ int InterfaceTCPServer::readFlyPlaneData(FlyPlaneData &data)
 
         if ((client_fd = accept(server_fd, (struct sockaddr *)&address, &addrlen)) < 0) {
             perror("accept");
-            return 1;
+            return false;
         }
         printf("Client connected\n");
     }
+
+    return true;
+}
+
+int InterfaceTCPServer::readFlyPlaneData(FlyPlaneData &data)
+{
+    if (!ConnectToClient()) return -1;
 
     unsigned char* buffer = new unsigned char [BUFFER_SIZE];
     ssize_t bytesReceived = recv(client_fd, buffer, BUFFER_SIZE, 0);

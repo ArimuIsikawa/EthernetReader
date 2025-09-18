@@ -22,6 +22,7 @@ public:
     ~InterfaceTCPServer();
 
     int recvData(uint8_t buffer[]);
+    bool ConnectToClient();
     int readFlyPlaneData(FlyPlaneData &data);
 };
 
