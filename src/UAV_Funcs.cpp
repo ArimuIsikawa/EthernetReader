@@ -160,8 +160,14 @@ void sendImage(InterfaceTCPClient tmp)
 	{
 		int n = 0;
 		unsigned char* image = getImage("drone.png", n);
+
+        unsigned char* data = new unsigned char[sizeof(int)];
+        memcpy(data, &n, sizeof(int));
+
+        tmp.sendData(data, sizeof(int));
 		tmp.sendData(image, n);
 
+        delete[] data;
         delete[] image;
 		std::this_thread::sleep_for(std::chrono::seconds(1));
 	}
@@ -198,7 +204,7 @@ void recvCoords(InterfaceTCPServer tmp)
             Do_SetWayPoints(Autopilot, Data.getCoords(), Data.getPointCount());
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }
 

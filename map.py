@@ -3,16 +3,12 @@
 """
 map_carto.py
 
-CartoDB map + image tab + 3 persistent route slots with colors +
-MAVLink/UDP live + TCP image receiver (saves image.png in script dir).
+Интерактивная карта (CartoDB) + 3 маршрута + MAVLink-over-UDP live (только pymavlink) +
+TCP image receiver (image in memory, SSE notifications).
 
-Files created/read in the directory where this script resides:
-  - index.html
-  - image.png (written by TCP receiver)
-  - coords.txt (written on Send)
-  - route_1.json .. route_3.json
+Важное изменение: координаты принимаются ТОЛЬКО через pymavlink (GLOBAL_POSITION_INT / GPS_RAW_INT и т.п.).
+Если pymavlink не установлен, скрипт завершится с ошибкой.
 """
-
 import http.server
 import socketserver
 import struct
@@ -24,42 +20,50 @@ import socket
 from typing import List
 import webbrowser
 import time
+import imghdr
+import datetime
 from urllib.parse import urlparse, parse_qs
 
 # --- Config ---
 HOST = "127.0.0.1"
-IMAGE_FILENAME = "image.png"
 OUTPUT_COORDS_FILE = "coords.txt"
 ROUTE_FILENAME_TEMPLATE = "route_{}.json"  # 1..3
 
-# UDP / MAVLink settings (default port, can override via env)
+# MAVLink UDP port (env override)
 DEFAULT_UDP_PORT = 14558
 UDP_PORT = int(os.environ.get("UDP_PORT", str(DEFAULT_UDP_PORT)))
 UDP_BIND_ADDR = "0.0.0.0"
 
-# TCP image receiver settings (default port 6006, can override via env)
+# TCP image receiver port (env override)
 DEFAULT_IMAGE_TCP_PORT = 14519
 IMAGE_TCP_PORT = int(os.environ.get("IMAGE_TCP_PORT", str(DEFAULT_IMAGE_TCP_PORT)))
-IMAGE_TCP_BIND = "127.0.0.1"
+IMAGE_TCP_BIND = "0.0.0.0"
 
 # Directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Colors for slots 1..3
+# Colors for route slots
 ROUTE_COLORS = ["#e34a4a", "#2a9d8f", "#f4a261"]
 
-# Shared variable for latest UDP/MAVLink point (thread-safe)
+# Shared UDP/MAVLink latest point
 _udp_lock = threading.Lock()
-_udp_latest = None  # dict { "lat": float, "lon": float, "ts": iso string, "raw": str, "from": "ip:port" }
+_udp_latest = None  # dict with at least keys: lat, lon, ts (ISO ms), raw, from
 
-# ---------- MAVLink listener (preferred) ----------
+# Shared image-in-memory variables + condition for SSE notifications
+_image_lock = threading.Lock()
+_image_cond = threading.Condition(_image_lock)
+_image_bytes = None
+_image_mime = None
+_image_ts = None
+
+# ---------- MAVLink listener (REQUIRED) ----------
 def mavlink_listener(bind_addr: str, port: int):
     global _udp_latest
     try:
         from pymavlink import mavutil
     except Exception as e:
-        print("pymavlink not available:", e, file=sys.stderr)
-        return False
+        print("ERROR: pymavlink not available. Install it with: pip install pymavlink", file=sys.stderr)
+        raise
 
     conn_str = f'udp:{bind_addr}:{port}'
     try:
@@ -68,13 +72,14 @@ def mavlink_listener(bind_addr: str, port: int):
         conn = mavutil.mavlink_connection(conn_str, source_system=255)
     except Exception as e:
         print("Failed to open MAVLink UDP:", e, file=sys.stderr)
-        return False
+        raise
 
     print("MAVLink listener started (waiting for messages)...")
     sys.stdout.flush()
     while True:
         try:
-            msg = conn.recv_match(timeout=2)
+            # wait for message (timeout to allow graceful checks)
+            msg = conn.recv_match(timeout=2) # type: ignore
         except Exception as e:
             print("MAVLink recv error:", e, file=sys.stderr)
             time.sleep(0.5)
@@ -91,122 +96,27 @@ def mavlink_listener(bind_addr: str, port: int):
         lat = None
         lon = None
 
+        # GLOBAL_POSITION_INT & GPS_RAW_INT lat/lon are ints in 1e7
         if mtype == 'GLOBAL_POSITION_INT':
-            try:
-                lat = float(msg.lat) / 1e7
-                lon = float(msg.lon) / 1e7
-            except Exception:
-                lat = None; lon = None
-        elif mtype == 'GPS_RAW_INT':
-            try:
-                lat = float(msg.lat) / 1e7
-                lon = float(msg.lon) / 1e7
-            except Exception:
-                lat = None; lon = None
-        else:
-            # generic tries
-            if hasattr(msg, 'lat') and hasattr(msg, 'lon'):
-                try:
-                    lat = float(getattr(msg, 'lat'))
-                    lon = float(getattr(msg, 'lon'))
-                except Exception:
-                    lat = None; lon = None
-            elif hasattr(msg, 'latitude') and hasattr(msg, 'longitude'):
-                try:
-                    lat = float(getattr(msg, 'latitude'))
-                    lon = float(getattr(msg, 'longitude'))
-                except Exception:
-                    lat = None; lon = None
+            lat = float(msg.lat) / 1e7
+            lon = float(msg.lon) / 1e7
 
         if lat is not None and lon is not None:
+            # ISO timestamp with milliseconds (avoids "static" marker when messages arrive within same second)
+            iso_ts = datetime.datetime.utcnow().isoformat(timespec='milliseconds') + 'Z'
             with _udp_lock:
                 _udp_latest = {
                     "lat": float(lat),
                     "lon": float(lon),
-                    "ts": time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()),
+                    "ts": iso_ts,
                     "raw": str(msg),
-                    "from": conn_str
+                    "from": conn_str,
+                    "type": mtype
                 }
-        time.sleep(1)
-    return True
-
-# ---------- Fallback generic UDP parser ----------
-def generic_udp_listener(bind_addr: str, port: int):
-    """Simple UDP text parser: supports JSON, comma/semicolon/space-separated floats."""
-    global _udp_latest
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        sock.bind((bind_addr, port))
-    except Exception as e:
-        print(f"Failed to bind UDP {bind_addr}:{port}: {e}", file=sys.stderr)
-        return
-    sock.setblocking(True)
-    print(f"Generic UDP listener bound to {bind_addr}:{port}")
-    sys.stdout.flush()
-    while True:
-        try:
-            data, addr = sock.recvfrom(4096)
-        except Exception as e:
-            print("UDP recv error:", e, file=sys.stderr)
-            time.sleep(0.5)
-            continue
-        try:
-            s = data.decode('utf-8', errors='ignore').strip()
-            lat = None; lon = None
-            # Try JSON first
-            if s.startswith('{') or s.startswith('['):
-                try:
-                    j = json.loads(s)
-                    if isinstance(j, dict):
-                        lat = j.get('lat') or j.get('y') or j.get('latitude')
-                        lon = j.get('lon') or j.get('lng') or j.get('x') or j.get('longitude')
-                except Exception:
-                    pass
-            if lat is None or lon is None:
-                for sep in (',', ';'):
-                    if sep in s:
-                        parts = [p.strip() for p in s.split(sep) if p.strip()]
-                        if len(parts) >= 2:
-                            try:
-                                lat = float(parts[0]); lon = float(parts[1])
-                            except Exception:
-                                lat = None; lon = None
-                            break
-                if (lat is None or lon is None) and ' ' in s:
-                    parts = [p.strip() for p in s.split() if p.strip()]
-                    if len(parts) >= 2:
-                        try:
-                            lat = float(parts[0]); lon = float(parts[1])
-                        except Exception:
-                            lat = None; lon = None
-            if (lat is None or lon is None):
-                import re
-                found = re.findall(r'[-+]?\d*\.\d+|[-+]?\d+', s)
-                if len(found) >= 2:
-                    try:
-                        lat = float(found[0]); lon = float(found[1])
-                    except Exception:
-                        lat = None; lon = None
-            if lat is not None and lon is not None:
-                with _udp_lock:
-                    _udp_latest = {"lat": float(lat), "lon": float(lon),
-                                   "ts": time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()),
-                                   "raw": s, "from": f"{addr[0]}:{addr[1]}"}
-                print(f"UDP <- {addr[0]}:{addr[1]}  -> {lat:.7f}, {lon:.7f}")
-                sys.stdout.flush()
-            else:
-                print(f"UDP: couldn't parse datagram from {addr}: {s!r}")
-                sys.stdout.flush()
-        except Exception as e:
-            print("Error processing UDP packet:", e, file=sys.stderr)
-            sys.stdout.flush()
 
 # ---------- TCP Image receiver (reads until connection close) ----------
 def image_tcp_listener(bind_addr: str, port: int):
-    """
-    Simple TCP server: accepts connections, reads all bytes until client closes connection,
-    writes them atomically into SCRIPT_DIR/image.png (via temp file + os.replace).
-    """
+    global _image_bytes, _image_mime, _image_ts
     server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
@@ -215,14 +125,52 @@ def image_tcp_listener(bind_addr: str, port: int):
     except Exception as e:
         print(f"Failed to bind image TCP {bind_addr}:{port}: {e}", file=sys.stderr)
         return
-    
+    print(f"Image TCP listener bound to {bind_addr}:{port}")
+    sys.stdout.flush()
     while True:
-        if (client_fd <= 0):
-            client_fd, addr = server_sock.accept()
-        chunk = client_fd.recv(100000)
-        print(len(chunk))
-        client_fd.close()
-
+        try:
+            conn, addr = server_sock.accept()
+        except Exception as e:
+            print("Image TCP accept error:", e, file=sys.stderr)
+            time.sleep(0.5)
+            continue
+        with conn:
+            try:
+                print(f"Image TCP connection from {addr}")
+                sys.stdout.flush()
+                tmp = bytearray()
+                count = int.from_bytes(conn.recv(4), 'little')
+                chunk = conn.recv(count)
+                tmp.extend(chunk)
+                if not tmp:
+                    print("Image TCP: no data received from", addr)
+                    continue
+                b = bytes(tmp)
+                img_type = imghdr.what(None, h=b)
+                mime = None
+                if img_type == 'png':
+                    mime = 'image/png'
+                elif img_type in ('jpeg', 'jpg'):
+                    mime = 'image/jpeg'
+                elif img_type == 'gif':
+                    mime = 'image/gif'
+                else:
+                    mime = 'application/octet-stream'
+                iso_ts = datetime.datetime.utcnow().isoformat(timespec='milliseconds') + 'Z'
+                with _image_cond:
+                    _image_bytes = b
+                    _image_mime = mime
+                    _image_ts = iso_ts
+                    _image_cond.notify_all()
+                print(f"Received image ({len(b)} bytes), type={img_type}, mime={mime}, ts={iso_ts}")
+                sys.stdout.flush()
+            except Exception as e:
+                print("Error handling image TCP connection:", e, file=sys.stderr)
+            finally:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
 class WGS84Coord:
     def __init__(self, lat: float = 0.0, lon: float = 0.0, alt: float = 0.0):
@@ -347,7 +295,7 @@ def send_serialized_data_tcp(host: str, port: int, serialized_data: bytearray) -
         print(f"Ошибка при отправке данных: {e}")
         return False
 
-# ---------- HTTP handler (adds /udp/last endpoint) ----------
+# ---------- HTTP handler ----------
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         parsed = urlparse(self.path)
@@ -360,38 +308,30 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             try:
                 data = json.loads(raw.decode('utf-8'))
             except Exception as e:
-                self.send_response(400); self.end_headers()
-                self.wfile.write(b'Invalid JSON: ' + str(e).encode('utf-8')); return
-            try:
-                print(json.dumps(data, ensure_ascii=False, indent=2))
-                sys.stdout.flush()
-            except Exception:
-                pass
+                self.send_response(400); self.end_headers(); self.wfile.write(b'Invalid JSON: '+str(e).encode()); return
             # write coords.txt
             try:
                 points = data.get('points', [])
-                coords_path = os.path.join(SCRIPT_DIR, OUTPUT_COORDS_FILE)
                 coords = []
-                with open(coords_path, 'w', encoding='utf-8') as f:
-                    f.write(str(len(points)) + "\n")
-                    for p in points:
-                        lat = p.get('lat', None)
-                        lon = p.get('lon', None)
-                        if lat is None and 'y' in p:
-                            lat = p.get('y')
-                        if lon is None and 'x' in p:
-                            lon = p.get('x')
-                        try:
-                            latf = float(lat); lonf = float(lon)
-                            coords.append(WGS84Coord(latf, lonf, 100))
-                        except Exception:
-                            coords.append(WGS84Coord(lat, lon, 100))
+                for p in points:
+                    lat = p.get('lat', None)
+                    lon = p.get('lon', None)
+                    if lat is None and 'y' in p:
+                        lat = p.get('y')
+                    if lon is None and 'x' in p:
+                        lon = p.get('x')
+                    try:
+                        latf = float(lat); lonf = float(lon)
+                        coords.append(WGS84Coord(latf, lonf, 100))
+                    except Exception:
+                        coords.append(WGS84Coord(lat, lon, 100))
                 plane_data = FlyPlaneData()
                 plane_data.set_coords(coords)
                 serialized = plane_data.serialization()
 
-                send_serialized_data_tcp(HOST, 14520, serialized)
-                print("Coords sended")
+                res = send_serialized_data_tcp(HOST, 14520, serialized)
+                if res == True:
+                    print("Coords sended")
                 sys.stdout.flush()
             except Exception as e:
                 print("Error writing coords file:", e, file=sys.stderr); sys.stdout.flush()
@@ -400,18 +340,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path == '/route/save':
-            length = int(self.headers.get('Content-Length', 0))
-            raw = self.rfile.read(length) if length > 0 else b''
+            length = int(self.headers.get('Content-Length', 0)); raw = self.rfile.read(length) if length>0 else b''
             try:
                 data = json.loads(raw.decode('utf-8'))
             except Exception as e:
-                self.send_response(400); self.end_headers()
-                self.wfile.write(b'Invalid JSON: ' + str(e).encode('utf-8')); return
-            slot = int(qs.get('slot', [0])[0]) if 'slot' in qs else 0
-            if slot < 1 or slot > 3:
+                self.send_response(400); self.end_headers(); self.wfile.write(b'Invalid JSON'); return
+            slot = int(qs.get('slot',[0])[0]) if 'slot' in qs else 0
+            if slot<1 or slot>3:
                 self.send_response(400); self.end_headers(); self.wfile.write(b'Invalid slot'); return
-            points = data.get('points', [])
-            color = data.get('color', ROUTE_COLORS[slot-1] if 1 <= slot <=3 else ROUTE_COLORS[0])
+            points = data.get('points', []); color = data.get('color', ROUTE_COLORS[slot-1] if 1<=slot<=3 else ROUTE_COLORS[0])
             cleaned = []
             for p in points:
                 try:
@@ -422,8 +359,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             try:
                 with open(route_path, 'w', encoding='utf-8') as f:
                     json.dump({'points': cleaned, 'color': color}, f, ensure_ascii=False, indent=2)
-                print(f"Saved route slot {slot} -> {route_path}")
-                sys.stdout.flush()
+                print(f"Saved route slot {slot} -> {route_path}"); sys.stdout.flush()
                 self.send_response(200); self.end_headers(); self.wfile.write(b'OK')
             except Exception as e:
                 print("Failed save route:", e, file=sys.stderr); sys.stdout.flush()
@@ -431,15 +367,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path == '/route/delete':
-            slot = int(qs.get('slot', [0])[0]) if 'slot' in qs else 0
-            if slot < 1 or slot > 3:
+            slot = int(qs.get('slot',[0])[0]) if 'slot' in qs else 0
+            if slot<1 or slot>3:
                 self.send_response(400); self.end_headers(); self.wfile.write(b'Invalid slot'); return
             route_path = os.path.join(SCRIPT_DIR, ROUTE_FILENAME_TEMPLATE.format(slot))
             try:
-                if os.path.exists(route_path):
-                    os.remove(route_path)
-                print(f"Deleted route slot {slot} (if existed)")
-                sys.stdout.flush()
+                if os.path.exists(route_path): os.remove(route_path)
+                print(f"Deleted route slot {slot} (if existed)"); sys.stdout.flush()
                 self.send_response(200); self.end_headers(); self.wfile.write(b'OK')
             except Exception as e:
                 print("Failed delete route:", e, file=sys.stderr); sys.stdout.flush()
@@ -449,46 +383,78 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_response(404); self.end_headers(); self.wfile.write(b'Not found')
 
     def do_GET(self):
-        parsed = urlparse(self.path)
-        path = parsed.path
-        qs = parse_qs(parsed.query)
+        parsed = urlparse(self.path); path = parsed.path; qs = parse_qs(parsed.query)
+
+        if path == '/image-live':
+            with _image_lock:
+                b = _image_bytes; mime = _image_mime; ts = _image_ts
+            if not b:
+                self.send_response(204); self.end_headers(); return
+            try:
+                self.send_response(200)
+                self.send_header("Content-Type", mime or "application/octet-stream")
+                self.send_header("Content-Length", str(len(b)))
+                self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+                self.end_headers()
+                self.wfile.write(b)
+            except BrokenPipeError:
+                pass
+            return
+
+        if path == '/image/stream':
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/event-stream')
+            self.send_header('Cache-Control', 'no-cache')
+            self.send_header('Connection', 'keep-alive')
+            self.end_headers()
+            try:
+                while True:
+                    with _image_cond:
+                        _image_cond.wait(timeout=30.0)
+                        if _image_ts:
+                            payload = _image_ts
+                            msg = f"event: new-image\ndata: {payload}\n\n"
+                            try:
+                                self.wfile.write(msg.encode('utf-8')); self.wfile.flush()
+                            except Exception:
+                                break
+                        else:
+                            try:
+                                self.wfile.write(b": ping\n\n"); self.wfile.flush()
+                            except Exception:
+                                break
+            except Exception:
+                pass
+            return
 
         if path == '/route/load':
-            slot = int(qs.get('slot', [0])[0]) if 'slot' in qs else 0
-            if slot < 1 or slot > 3:
+            slot = int(qs.get('slot',[0])[0]) if 'slot' in qs else 0
+            if slot<1 or slot>3:
                 self.send_response(400); self.end_headers(); self.wfile.write(b'Invalid slot'); return
             route_path = os.path.join(SCRIPT_DIR, ROUTE_FILENAME_TEMPLATE.format(slot))
             if not os.path.exists(route_path):
                 self.send_response(404); self.end_headers(); self.wfile.write(b'Not found'); return
             try:
-                with open(route_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                self.send_response(200)
-                self.send_header("Content-Type","application/json; charset=utf-8")
-                self.end_headers()
+                with open(route_path,'r',encoding='utf-8') as f: data=json.load(f)
+                self.send_response(200); self.send_header("Content-Type","application/json; charset=utf-8"); self.end_headers()
                 self.wfile.write(json.dumps(data, ensure_ascii=False).encode('utf-8'))
             except Exception as e:
-                print("Failed load route:", e, file=sys.stderr); sys.stdout.flush()
-                self.send_response(500); self.end_headers(); self.wfile.write(b'Error loading')
+                print("Failed load route:", e, file=sys.stderr); sys.stdout.flush(); self.send_response(500); self.end_headers(); self.wfile.write(b'Error loading')
             return
 
         if path == '/route/meta':
-            meta = {}
+            meta={}
             for s in (1,2,3):
                 route_path = os.path.join(SCRIPT_DIR, ROUTE_FILENAME_TEMPLATE.format(s))
                 if os.path.exists(route_path):
                     try:
-                        with open(route_path, 'r', encoding='utf-8') as f:
-                            data = json.load(f)
-                        pts = data.get('points', [])
-                        meta[str(s)] = len(pts)
+                        with open(route_path,'r',encoding='utf-8') as f: data=json.load(f)
+                        meta[str(s)]=len(data.get('points',[]))
                     except Exception:
-                        meta[str(s)] = 0
+                        meta[str(s)]=0
                 else:
-                    meta[str(s)] = 0
-            self.send_response(200)
-            self.send_header("Content-Type","application/json; charset=utf-8")
-            self.end_headers()
+                    meta[str(s)]=0
+            self.send_response(200); self.send_header("Content-Type","application/json; charset=utf-8"); self.end_headers()
             self.wfile.write(json.dumps(meta, ensure_ascii=False).encode('utf-8'))
             return
 
@@ -497,38 +463,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 data = _udp_latest.copy() if _udp_latest else None
             if not data:
                 self.send_response(204); self.end_headers(); return
-            self.send_response(200)
-            self.send_header("Content-Type","application/json; charset=utf-8")
-            self.end_headers()
+            self.send_response(200); self.send_header("Content-Type","application/json; charset=utf-8"); self.end_headers()
             self.wfile.write(json.dumps(data, ensure_ascii=False).encode('utf-8'))
             return
 
-        # fallback to static file serving (index.html, image.png etc.)
+        # serve index.html and other static files from script dir
         return http.server.SimpleHTTPRequestHandler.do_GET(self)
 
 # ---------- Utilities and startup ----------
 def find_free_port():
-    s = socket.socket()
-    s.bind((HOST, 0))
-    addr, port = s.getsockname()
-    s.close()
-    return port
+    s = socket.socket(); s.bind((HOST,0)); addr, port = s.getsockname(); s.close(); return port
 
-def start_mavlink_or_udp_thread():
-    try:
-        import importlib
-        spec = importlib.util.find_spec("pymavlink")
-        if spec is not None:
-            t = threading.Thread(target=mavlink_listener, args=(UDP_BIND_ADDR, UDP_PORT), daemon=True)
-            t.start()
-            print("Started MAVLink listener thread.")
-            return t
-    except Exception:
-        pass
-    t2 = threading.Thread(target=generic_udp_listener, args=(UDP_BIND_ADDR, UDP_PORT), daemon=True)
-    t2.start()
-    print("Started generic UDP listener thread (fallback).")
-    return t2
+def start_mavlink_thread_or_exit():
+    t = threading.Thread(target=mavlink_listener, args=(UDP_BIND_ADDR, UDP_PORT), daemon=True)
+    t.start()
+    print("Started MAVLink listener thread.")
+    return t
 
 def start_image_tcp_thread():
     t = threading.Thread(target=image_tcp_listener, args=(IMAGE_TCP_BIND, IMAGE_TCP_PORT), daemon=True)
@@ -537,23 +487,23 @@ def start_image_tcp_thread():
     return t
 
 def start_server_and_open_ui():
-    # serve from SCRIPT_DIR
     os.chdir(SCRIPT_DIR)
-
     port = find_free_port()
 
     def server_thread():
-        with socketserver.TCPServer((HOST, port), Handler) as httpd:
-            httpd.allow_reuse_address = True
-            print(f"Serving HTTP on {HOST}:{port} (serving directory: {SCRIPT_DIR})")
-            sys.stdout.flush()
-            try:
-                httpd.serve_forever()
-            except KeyboardInterrupt:
-                pass
+        try:
+            httpd = http.server.ThreadingHTTPServer((HOST, port), Handler)
+        except AttributeError:
+            class ThreadingServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+                daemon_threads = True
+            httpd = ThreadingServer((HOST, port), Handler)
+        httpd.allow_reuse_address = True
+        print(f"Serving HTTP on {HOST}:{port} (serving directory: {SCRIPT_DIR})"); sys.stdout.flush()
+        try: httpd.serve_forever()
+        except KeyboardInterrupt: pass
 
     # start listeners
-    start_mavlink_or_udp_thread()
+    start_mavlink_thread_or_exit()
     start_image_tcp_thread()
 
     t = threading.Thread(target=server_thread, daemon=True)
@@ -562,21 +512,18 @@ def start_server_and_open_ui():
     url = f"http://{HOST}:{port}/index.html"
     try:
         import webview
-        window = webview.create_window("Карта (CartoDB) — маршруты + live", url, width=1100, height=800)
+        window = webview.create_window("Карта (CartoDB) — MAVLink live", url, width=1200, height=800)
         webview.start()
     except Exception as e:
-        print("pywebview unavailable or failed to start; opening default browser. Error:", e, file=sys.stderr)
+        print("pywebview unavailable or failed; opening default browser:", e, file=sys.stderr)
         webbrowser.open(url)
         try:
-            while True:
-                t.join(1)
+            while True: t.join(1)
         except KeyboardInterrupt:
-            print("Exit.")
-            return
+            print("Exit."); return
 
 if __name__ == "__main__":
     print("Script directory:", SCRIPT_DIR)
-    print(f"UDP/MAVLink listener will bind to {UDP_BIND_ADDR}:{UDP_PORT}")
+    print(f"MAVLink UDP listener will bind to {UDP_BIND_ADDR}:{UDP_PORT} (pymavlink required)")
     print(f"Image TCP listener will bind to {IMAGE_TCP_BIND}:{IMAGE_TCP_PORT}")
-    print("If you want MAVLink parsing, install pymavlink: pip install pymavlink")
     start_server_and_open_ui()
