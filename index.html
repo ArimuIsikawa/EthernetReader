@@ -2,60 +2,67 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Управление через терминал спутниковой связи</title>
+<title>Карта + live image</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <style>
-/* minimal styles - same as previous versions */
-html, body { height:100%; margin:0; padding:0; font-family:Arial, sans-serif; }
-.tabs { display:flex; gap:8px; padding:8px; background:#f2f2f2; align-items:center; border-bottom:1px solid #ddd; }
-.tabs button { padding:8px 12px; border:1px solid #ccc; background:white; cursor:pointer; border-radius:4px; }
-.tabs button.active { background:#007acc; color:white; border-color:#007acc; }
-.content { height: calc(100% - 56px); }
-#panel-map, #panel-image { width:100%; height:100%; display:flex; flex-direction:column; }
-.map-controls { padding:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-.send-btn { padding:8px 10px; border-radius:4px; border:1px solid #666; background:#eee; cursor:pointer; }
-.info { margin-left:auto; font-size:13px; color:#222; padding-right:6px; }
-#map { flex:1; min-height:200px; width:100%; }
-#imgwrap { width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#111; }
-#imgwrap img { max-width:100%; max-height:100%; display:block; }
-#loading { color:white; text-align:center; padding:12px; }
-.routes { display:flex; gap:8px; align-items:center; }
-.route-slot { display:flex; flex-direction:column; gap:6px; padding:6px; border:1px solid #ddd; border-radius:6px; min-width:140px; background:#fff; }
-.marker-number { display:inline-block; color:#fff; border-radius:50%; width:24px; height:24px; line-height:24px; text-align:center; border:2px solid white; box-shadow:0 0 0 1px rgba(0,0,0,0.15); font-weight:700; }
-.udp-status { font-size:13px; margin-left:8px; padding:6px 8px; border-radius:6px; border:1px solid #ddd; background:#fff; }
-.udp-status.ok { border-color:#2a9d8f; color:#0a6; }
-.udp-status.none { color:#999; }
-.leaflet-attribution-flag { display: none !important; }
+  html, body { height:95%; margin:0; padding:0; font-family: Arial, sans-serif; }
+  .topbar { padding:8px; background:#f2f2f2; border-bottom:1px solid #ddd; display:flex; gap:8px; align-items:center; }
+  .btn { padding:8px 10px; border-radius:6px; border:1px solid #bbb; background:#fff; cursor:pointer; }
+  .container { display:flex; height: calc(100% - 56px); gap:12px; padding:12px; box-sizing:border-box; }
+  .left { flex:1 1 0; display:flex; flex-direction:column; min-width:300px; }
+  .right { width:660px; /* 640 + padding/border */ display:flex; flex-direction:column; align-items:center; }
+  .map-box { flex:1; min-height:200px; border:1px solid #ddd; border-radius:8px; overflow:hidden; }
+  #map { width:100%; height:100%; }
+  .routes { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .route-slot { display:flex; flex-direction:column; gap:6px; padding:6px; border:1px solid #ddd; border-radius:6px; min-width:140px; background:#fff; }
+  .color-dot { width:16px; height:16px; border-radius:4px; border:1px solid rgba(0,0,0,0.12); display:inline-block; margin-right:6px; vertical-align:middle; }
+  .info { margin-left:auto; font-size:13px; color:#222; padding-right:6px; }
+  /* image panel */
+  .image-panel { width:640px; height:480px; border:1px solid #ccc; border-radius:8px; background:#111; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .image-panel img { max-width:100%; max-height:100%; display:block; }
+  .image-meta { margin-top:8px; font-size:13px; color:#333; width:100%; display:flex; justify-content:space-between; }
+  .udp-status { font-size:13px; padding:6px 8px; border-radius:6px; border:1px solid #ddd; background:#fff; }
+  .udp-status.ok { border-color:#2a9d8f; color:#0a6; }
+  .udp-status.none { color:#999; }
+  .marker-number { display:inline-block; color:#fff; border-radius:50%; width:24px; height:24px; line-height:24px; text-align:center; border:2px solid white; box-shadow:0 0 0 1px rgba(0,0,0,0.15); font-weight:700; }
+  @media (max-width:1100px){
+    .container{ flex-direction:column; }
+    .right{ width:100%; }
+    .image-panel{ width:100%; height:320px; }
+  }
+  .leaflet-attribution-flag { display: none !important; }
 </style>
 </head>
 <body>
-<div class="tabs">
-  <button id="tab-map" class="active">Карта</button>
-  <button id="tab-image">Изображение</button>
-</div>
-<div class="content">
-  <div id="panel-map">
-    <div class="map-controls">
-      <button id="sendBtn" class="send-btn">Отправить</button>
-      <button id="clearBtn" class="send-btn">Очистить</button>
-      <div class="routes" id="routes"></div>
-      <div class="info">Маркер(ов): <span id="count">0</span></div>
-      <div style="margin-left:12px;">
-        <span>Координаты: <strong id="udp-port">14558</strong></span>
-        <span id="udp-status" class="udp-status none">Нет данных</span>
-        <label style="margin-left:8px;"><input type="checkbox" id="udp-enable" checked/> live</label>
-        <br/>
-        <span>Изображение: <strong id="img-port">14519</strong></span>
-      </div>
-    </div>
-    <div id="map"></div>
+<div class="topbar">
+  <button id="sendBtn" class="btn">Отправить</button>
+  <button id="clearBtn" class="btn">Очистить</button>
+
+  <div class="routes" id="routes"></div>
+
+  <div class="info">Маркер(ов): <span id="count">0</span></div>
+
+  <div style="margin-left:12px;">
+    <span>Координаты: <strong id="udp-port">14558</strong></span>
+    <span id="udp-status" class="udp-status none">Нет данных</span>
+    <label style="margin-left:8px;"><input type="checkbox" id="udp-enable" checked/> live</label>
+    <span style="margin-left:12px;">Изображение: <strong id="img-port">15419</strong></span>
   </div>
-  <div id="panel-image" style="display:none;">
-    <div id="imgwrap">
+</div>
+
+<div class="container">
+  <div class="left">
+    <div class="map-box"><div id="map"></div></div>
+    <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="image-panel" id="image-panel">
       <div id="loading">Ожидаем изображение по TCP...</div>
-      <img id="theimage" src="" style="display:none"/>
+      <img id="theimage" src="" style="display:none" />
     </div>
   </div>
 </div>
@@ -63,19 +70,12 @@ html, body { height:100%; margin:0; padding:0; font-family:Arial, sans-serif; }
 <script>
 (function(){
   const routeColors = ["#e34a4a", "#2a9d8f", "#f4a261"];
-  // Tabs
-  const tabMapBtn = document.getElementById("tab-map");
-  const tabImageBtn = document.getElementById("tab-image");
-  const panelMap = document.getElementById("panel-map");
-  const panelImage = document.getElementById("panel-image");
-  tabMapBtn.onclick = () => { tabMapBtn.classList.add("active"); tabImageBtn.classList.remove("active"); panelMap.style.display = ""; panelImage.style.display = "none"; setTimeout(()=>map.invalidateSize(),200); };
-  tabImageBtn.onclick = () => { tabImageBtn.classList.add("active"); tabMapBtn.classList.remove("active"); panelImage.style.display = ""; panelMap.style.display = "none"; };
 
-  // Map
+  // Map setup
   const map = L.map('map', { zoomControl:true }).setView([55.753215, 37.622504], 5);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO', maxZoom:19 }).addTo(map);
 
-  // markers (numbered) — unchanged
+  // Markers (numbered)
   let markers = [];
   function refreshCount(){ document.getElementById("count").textContent = markers.length; }
   function createNumberedMarker(latlng, number, color) {
@@ -91,126 +91,212 @@ html, body { height:100%; margin:0; padding:0; font-family:Arial, sans-serif; }
   map.on('click', function(e){ addMarkerAt(e.latlng, routeColors[0]); });
   document.getElementById("clearBtn").addEventListener("click", ()=>{ markers.forEach(it=>{ try{ map.removeLayer(it.marker);}catch{} }); markers=[]; refreshCount(); });
 
-  // Send / routes UI — same as before (omitted for brevity in comments)
-  // Create route slots
+  // Routes UI
   const routesContainer = document.getElementById("routes");
-  function makeSlotElement(slot, color){
-    const wrap=document.createElement('div'); wrap.className='route-slot'; wrap.id='route-slot-'+slot;
-    const colorDot='<span style="display:inline-block;width:16px;height:16px;background:'+color+';margin-right:6px;border-radius:4px;border:1px solid rgba(0,0,0,0.12)"></span>';
-    wrap.innerHTML=`<div style="font-weight:700">${colorDot} Route ${slot}</div><div class="row"><button data-act="save" data-slot="${slot}">Сохранить</button><button data-act="load" data-slot="${slot}">Загрузить</button><button data-act="del" data-slot="${slot}">Очистить</button></div><div class="meta" id="route-meta-${slot}">—</div>`;
-    wrap.querySelector('[data-act="save"]').addEventListener('click',()=>saveRouteSlot(slot));
-    wrap.querySelector('[data-act="load"]').addEventListener('click',()=>loadRouteSlot(slot));
-    wrap.querySelector('[data-act="del"]').addEventListener('click',()=>deleteRouteSlot(slot));
+  function makeSlotElement(slot, color) {
+    const wrap = document.createElement('div');
+    wrap.className = 'route-slot';
+    wrap.id = 'route-slot-' + slot;
+    const colorDotHtml = '<span class="color-dot" style="background:' + color + ';"></span>';
+    wrap.innerHTML = `
+      <div style="font-weight:700">${colorDotHtml} Маршрут ${slot}</div>
+      <div style="display:flex; gap:6px;">
+        <button data-act="save" data-slot="${slot}" class="btn">Сохранить</button>
+        <button data-act="load" data-slot="${slot}" class="btn">Загрузить</button>
+        <button data-act="del"  data-slot="${slot}" class="btn">Очистить</button>
+      </div>
+      <div class="meta" id="route-meta-${slot}">—</div>
+    `;
+    wrap.querySelector('[data-act="save"]').addEventListener('click', () => saveRouteSlot(slot));
+    wrap.querySelector('[data-act="load"]').addEventListener('click', () => loadRouteSlot(slot));
+    wrap.querySelector('[data-act="del"]').addEventListener('click', () => deleteRouteSlot(slot));
     return wrap;
   }
-  for(let s=1;s<=3;s++) routesContainer.appendChild(makeSlotElement(s, routeColors[s-1]));
+  for (let s=1;s<=3;s++){
+    routesContainer.appendChild(makeSlotElement(s, routeColors[s-1]));
+  }
 
-  async function saveRouteSlot(slot){
-    const pts = markers.map(it=>({lat: Number(it.lat.toFixed(7)), lon: Number(it.lon.toFixed(7))}));
+  async function saveRouteSlot(slot) {
+    const pts = markers.map(it => ({ lat: Number(it.lat.toFixed(7)), lon: Number(it.lon.toFixed(7)) }));
     const color = routeColors[slot-1] || routeColors[0];
-    const resp = await fetch('/route/save?slot='+slot, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({points:pts, color:color}) });
-    if(!resp.ok) { alert('Ошибка сохранения: '+resp.status); return; }
-    alert('Сохранён маршрут '+slot);
-    fetchRouteMetaAndUpdateUI();
+    try {
+      const resp = await fetch('/route/save?slot=' + slot, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ points: pts, color: color })
+      });
+      if (!resp.ok) throw new Error("Server " + resp.status);
+      alert("Сохранён маршрут " + slot + ".");
+      fetchRouteMetaAndUpdateUI();
+    } catch (e) { alert("Ошибка сохранения: " + e); }
   }
-  async function loadRouteSlot(slot){
-    const resp = await fetch('/route/load?slot='+slot);
-    if(resp.status===404) { alert('Маршрут пуст'); return; }
-    if(!resp.ok) { alert('Ошибка загрузки: '+resp.status); return; }
-    const data = await resp.json();
-    markers.forEach(it=>{ try{ map.removeLayer(it.marker);}catch{} }); markers = [];
-    const color = data.color || routeColors[slot-1];
-    for(const p of (data.points||[])) addMarkerAt({lat:p.lat, lng:p.lon}, color);
-    alert('Загружен маршрут ' + slot);
+
+  async function loadRouteSlot(slot) {
+    try {
+      const resp = await fetch('/route/load?slot=' + slot);
+      if (resp.status === 404) { alert("Маршрут " + slot + " пуст."); return; }
+      if (!resp.ok) throw new Error("Server " + resp.status);
+      const data = await resp.json();
+      // clear and render
+      markers.forEach(it=>{ try{ map.removeLayer(it.marker);}catch{} }); markers=[];
+      const pts = data.points || [];
+      const color = data.color || routeColors[slot-1];
+      for (let p of pts){ addMarkerAt({lat: p.lat, lng: p.lon}, color); }
+      alert("Загружен маршрут " + slot);
+    } catch (e) { alert("Ошибка загрузки: " + e); }
   }
-  async function deleteRouteSlot(slot){
-    if(!confirm('Очистить маршрут  '+slot+'?')) return;
-    const resp = await fetch('/route/delete?slot='+slot, { method:'POST' });
-    if(!resp.ok){ alert('Ошибка очистки'); return; }
-    alert('Очищено');
-    fetchRouteMetaAndUpdateUI();
+
+  async function deleteRouteSlot(slot) {
+    if (!confirm("Удалить маршрут в слоте " + slot + "?")) return;
+    try {
+      const resp = await fetch('/route/delete?slot=' + slot, { method: 'POST' });
+      if (!resp.ok) throw new Error("Server " + resp.status);
+      alert("Очищен маршрут " + slot + ".");
+      fetchRouteMetaAndUpdateUI();
+    } catch (e) { alert("Ошибка очистки: " + e); }
   }
+
   async function fetchRouteMetaAndUpdateUI(){
-    try{
+    try {
       const resp = await fetch('/route/meta');
-      if(!resp.ok) return;
+      if (!resp.ok) return;
       const meta = await resp.json();
-      for(let s=1;s<=3;s++){ document.getElementById('route-meta-'+s).textContent = (meta[String(s)]||0) > 0 ? 'Всего точек: ' + (meta[String(s)]) : 'Чисто'; }
-    }catch(e){ console.warn(e); }
+      for (let s=1;s<=3;s++){
+        const el = document.getElementById('route-meta-' + s);
+        const n = meta[String(s)] || 0;
+        el.textContent = n > 0 ? ("Точек: " + n) : "Пусто";
+      }
+    } catch (e) { console.warn("Failed to fetch route meta:", e); }
   }
   fetchRouteMetaAndUpdateUI();
 
-  // Send -> write coords.txt
-  document.getElementById("sendBtn").addEventListener("click", async ()=>{
-    const pts = markers.map(it=>({lat: Number(it.lat.toFixed(7)), lon: Number(it.lon.toFixed(7))}));
-    const resp = await fetch('/send', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ points: pts, provider: 'carto_voyager', ts: (new Date()).toISOString() }) });
-    if(!resp.ok){ alert('Ошибка отправки '+resp.status); return; }
-    alert('Отправлено точек: ' + pts.length);
-    fetchRouteMetaAndUpdateUI();
+  // Send -> server writes coords.txt
+  document.getElementById("sendBtn").addEventListener("click", async function(){
+    const pts = markers.map(it => ({ lat: Number(it.lat.toFixed(7)), lon: Number(it.lon.toFixed(7)) }));
+    const payload = { points: pts, provider: "carto_voyager", ts: (new Date()).toISOString() };
+    try {
+      const resp = await fetch('/send', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (!resp.ok) throw new Error("Server returned " + resp.status);
+      alert("Отправлено: " + pts.length + " точек.");
+      fetchRouteMetaAndUpdateUI();
+    } catch (err) {
+      alert("Ошибка отправки: " + err);
+    }
   });
 
   let udpMarker = null;
   let udpLastTs = null;
-  const udpPortLabel = document.getElementById("udp-port"); udpPortLabel.textContent = "14558";
+  const udpPortLabel = document.getElementById("udp-port");
+  udpPortLabel.textContent = "14558";
   const udpStatusEl = document.getElementById("udp-status");
   const udpEnableCheckbox = document.getElementById("udp-enable");
+
   async function pollUdpLast(){
-    if(!udpEnableCheckbox.checked){ udpStatusEl.className='udp-status none'; udpStatusEl.textContent='live paused'; return; }
-    try{
+    if (!udpEnableCheckbox.checked) {
+      udpStatusEl.className = "udp-status none";
+      udpStatusEl.textContent = "Пауза";
+      return;
+    }
+    try {
       const resp = await fetch('/udp/last');
-      if(resp.status===204){ udpStatusEl.className='udp-status none'; udpStatusEl.textContent='no data'; return; }
-      if(!resp.ok) throw new Error('HTTP '+resp.status);
-      const data = await resp.json();
-      if(typeof data.lat==='undefined' || typeof data.lon==='undefined'){ udpStatusEl.className='udp-status none'; udpStatusEl.textContent='bad data'; return; }
-      udpStatusEl.className='udp-status ok';
-      udpStatusEl.textContent = '• live •';
-      if(udpLastTs !== data.ts || !udpMarker){
+      if (resp.status === 204) {
+        udpStatusEl.className = "udp-status none";
+        udpStatusEl.textContent = "Нет данных";
+        return;
+      }
+      if (!resp.ok) throw new Error("Server " + resp.status);
+      const data = await resp.json(); // {lat,lon,ts,raw,from}
+      if (typeof data.lat === 'undefined' || typeof data.lon === 'undefined') {
+        udpStatusEl.className = "udp-status none";
+        udpStatusEl.textContent = "Некорректные данные";
+        return;
+      }
+      udpStatusEl.className = "udp-status ok";
+      udpStatusEl.textContent = "•live•";
+      if (udpLastTs !== data.ts || !udpMarker) {
         udpLastTs = data.ts;
         const latlng = [data.lat, data.lon];
-        if(!udpMarker){
-          udpMarker = L.circleMarker(latlng, { radius:8, fillColor:'#1f77b4', color:'#fff', weight:2, fillOpacity:1 }).addTo(map);
-          udpMarker.bindTooltip("Машина", {permanent:true, direction:'right'}).openTooltip();
+        if (!udpMarker) {
+          udpMarker = L.circleMarker(latlng, { radius:8, fillColor: '#1f77b4', color:'#fff', weight:2, fillOpacity:1 }).addTo(map);
+          udpMarker.bindTooltip("БВС", {permanent:true, direction:'right'}).openTooltip();
         } else {
           udpMarker.setLatLng(latlng);
         }
       }
-    }catch(e){
-      udpStatusEl.className='udp-status none';
-      udpStatusEl.textContent='UDP poll err';
+    } catch (e) {
+      udpStatusEl.className = "udp-status none";
+      udpStatusEl.textContent = "UDP poll err";
     }
   }
+
   setInterval(pollUdpLast, 500);
   pollUdpLast();
 
-  // Image SSE + fetch
+  // --- Image: SSE + fetch to show in right panel ---
   const imgEl = document.getElementById("theimage");
   const loading = document.getElementById("loading");
-  async function fetchAndShowImage(){
-    try{
-      const resp = await fetch('/image-live?ts='+Date.now());
-      if(resp.status===204){ imgEl.style.display='none'; loading.style.display=''; loading.textContent='Ожидаем изображение по TCP...'; return; }
-      if(!resp.ok) throw new Error('HTTP '+resp.status);
+  const imgInfo = document.getElementById("img-info");
+  const imgTs = document.getElementById("img-ts");
+  const imgPortLabel = document.getElementById("img-port");
+  imgPortLabel.textContent = "15419";
+
+  async function fetchAndShowImage() {
+    try {
+      const resp = await fetch('/image-live?ts=' + Date.now());
+      if (resp.status === 204) {
+        imgEl.style.display = "none";
+        loading.style.display = "";
+        imgInfo.textContent = "Нет изображений";
+        imgTs.textContent = "";
+        return;
+      }
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
       const blob = await resp.blob();
-      if(imgEl._objUrl) URL.revokeObjectURL(imgEl._objUrl);
+      if (imgEl._objUrl) {
+        URL.revokeObjectURL(imgEl._objUrl);
+      }
       const url = URL.createObjectURL(blob);
       imgEl._objUrl = url;
       imgEl.src = url;
-      imgEl.style.display='';
-      loading.style.display='none';
-    }catch(e){ console.warn('fetch image failed', e); }
+      imgEl.style.display = "";
+      loading.style.display = "none";
+      // fetch meta for ts (we can fetch /image-meta or use SSE data)
+      // We'll just request /image-meta or parse header? Simpler: call /image/last (not implemented) - instead show timestamp from SSE event (set in handler)
+    } catch (e) {
+      console.warn("Failed to fetch image:", e);
+    }
   }
-  try{
+
+  // SSE: listen for new-image events and update meta
+  try {
     const es = new EventSource('/image/stream');
-    es.onmessage = ()=>fetchAndShowImage();
-    es.addEventListener('new-image', ()=>fetchAndShowImage());
-    es.onopen = ()=>fetchAndShowImage();
-    es.onerror = ()=>console.warn('SSE image stream error');
-  }catch(e){
+    es.addEventListener('new-image', function(ev) {
+      // ev.data contains timestamp
+      const ts = ev.data || "";
+      fetchAndShowImage();
+    });
+    es.onmessage = function(ev) {
+      fetchAndShowImage();
+    };
+    es.onerror = function() {
+      console.warn("SSE connection error for image stream");
+    };
+    es.onopen = function() {
+      // try initial fetch
+      fetchAndShowImage();
+    };
+  } catch (e) {
+    // fallback polling
     setInterval(fetchAndShowImage, 3000);
     fetchAndShowImage();
   }
 
-  setTimeout(()=>map.invalidateSize(), 300);
+  // ensure map resizes correctly on load
+  setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 300);
 })();
 </script>
 </body>

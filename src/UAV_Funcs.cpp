@@ -142,23 +142,28 @@ void sendImage(InterfaceTCPClient tmp)
         return;
     }
 
+    int n = 0;
+    uint8_t* image;
+
 	while (true)
 	{
-        int size = cam.frameSize();
-        if (size <= 0) size = 1024*1024; // запасной размер
-		int n = 0;
-		uint8_t* image;
-
         bool res = cam.getFrame(image, n);
 
-        unsigned char* data = new unsigned char[sizeof(int)];
-        memcpy(data, &n, sizeof(int));
+        if (n > 0)
+        {
+            unsigned char* data = new unsigned char[sizeof(int)];
+            memcpy(data, &n, sizeof(int));
 
-        tmp.sendData(data, sizeof(int));
-		tmp.sendData(image, n);
+            tmp.sendData(data, sizeof(int));
+            tmp.sendData(image, n);
 
-        delete[] data;
-        delete[] image;
+            delete[] data;
+            data = nullptr;
+
+            delete[] image;
+            image = nullptr;
+        }
+
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 }

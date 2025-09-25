@@ -1,14 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-map_carto.py
+#/usr/bin/ python3
 
-Интерактивная карта (CartoDB) + 3 маршрута + MAVLink-over-UDP live (только pymavlink) +
-TCP image receiver (image in memory, SSE notifications).
-
-Важное изменение: координаты принимаются ТОЛЬКО через pymavlink (GLOBAL_POSITION_INT / GPS_RAW_INT и т.п.).
-Если pymavlink не установлен, скрипт завершится с ошибкой.
-"""
 import http.server
 import socketserver
 import struct
@@ -24,13 +15,11 @@ import imghdr
 import datetime
 from urllib.parse import urlparse, parse_qs
 
-# --- Config ---
 HOST = "127.0.0.1"
-OUTPUT_COORDS_FILE = "coords.txt"
 ROUTE_FILENAME_TEMPLATE = "route_{}.json"  # 1..3
 
-# MAVLink UDP port (env override)
-DEFAULT_UDP_PORT = 14558
+# MAVLink UDP port
+DEFAULT_UDP_PORT = 14559
 UDP_PORT = int(os.environ.get("UDP_PORT", str(DEFAULT_UDP_PORT)))
 UDP_BIND_ADDR = "0.0.0.0"
 
@@ -43,11 +32,11 @@ IMAGE_TCP_BIND = "0.0.0.0"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Colors for route slots
-ROUTE_COLORS = ["#e34a4a", "#2a9d8f", "#f4a261"]
+ROUTE_COLORS = ["#ff0000", "#0000FF", "#00FF00"]
 
-# Shared UDP/MAVLink latest point
+# Shared MAVLink latest point
 _udp_lock = threading.Lock()
-_udp_latest = None  # dict with at least keys: lat, lon, ts (ISO ms), raw, from
+_udp_latest = None  # dict with keys: lat, lon, ts (ISO ms), raw, from, type
 
 # Shared image-in-memory variables + condition for SSE notifications
 _image_lock = threading.Lock()
@@ -56,7 +45,6 @@ _image_bytes = None
 _image_mime = None
 _image_ts = None
 
-# ---------- MAVLink listener (REQUIRED) ----------
 def mavlink_listener(bind_addr: str, port: int):
     global _udp_latest
     try:
@@ -114,7 +102,6 @@ def mavlink_listener(bind_addr: str, port: int):
                     "type": mtype
                 }
 
-# ---------- TCP Image receiver (reads until connection close) ----------
 def image_tcp_listener(bind_addr: str, port: int):
     global _image_bytes, _image_mime, _image_ts
     server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -305,7 +292,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             try:
                 data = json.loads(raw.decode('utf-8'))
             except Exception as e:
-                self.send_response(400); self.end_headers(); self.wfile.write(b'Invalid JSON: '+str(e).encode()); return
+                self.send_response(400); self.end_headers()
+                self.wfile.write(b'Invalid JSON: ' + str(e).encode('utf-8')); return
+            try:
+                print(json.dumps(data, ensure_ascii=False, indent=2))
+                sys.stdout.flush()
+            except Exception:
+                pass
             # write coords.txt
             try:
                 points = data.get('points', [])
@@ -337,15 +330,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path == '/route/save':
-            length = int(self.headers.get('Content-Length', 0)); raw = self.rfile.read(length) if length>0 else b''
+            length = int(self.headers.get('Content-Length', 0))
+            raw = self.rfile.read(length) if length > 0 else b''
             try:
                 data = json.loads(raw.decode('utf-8'))
             except Exception as e:
-                self.send_response(400); self.end_headers(); self.wfile.write(b'Invalid JSON'); return
-            slot = int(qs.get('slot',[0])[0]) if 'slot' in qs else 0
-            if slot<1 or slot>3:
+                self.send_response(400); self.end_headers()
+                self.wfile.write(b'Invalid JSON: ' + str(e).encode('utf-8')); return
+            slot = int(qs.get('slot', [0])[0]) if 'slot' in qs else 0
+            if slot < 1 or slot > 3:
                 self.send_response(400); self.end_headers(); self.wfile.write(b'Invalid slot'); return
-            points = data.get('points', []); color = data.get('color', ROUTE_COLORS[slot-1] if 1<=slot<=3 else ROUTE_COLORS[0])
+            points = data.get('points', [])
+            color = data.get('color', ROUTE_COLORS[slot-1] if 1 <= slot <=3 else ROUTE_COLORS[0])
             cleaned = []
             for p in points:
                 try:
@@ -356,7 +352,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             try:
                 with open(route_path, 'w', encoding='utf-8') as f:
                     json.dump({'points': cleaned, 'color': color}, f, ensure_ascii=False, indent=2)
-                print(f"Saved route slot {slot} -> {route_path}"); sys.stdout.flush()
+                print(f"Saved route slot {slot} -> {route_path}")
+                sys.stdout.flush()
                 self.send_response(200); self.end_headers(); self.wfile.write(b'OK')
             except Exception as e:
                 print("Failed save route:", e, file=sys.stderr); sys.stdout.flush()
@@ -364,13 +361,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path == '/route/delete':
-            slot = int(qs.get('slot',[0])[0]) if 'slot' in qs else 0
-            if slot<1 or slot>3:
+            slot = int(qs.get('slot', [0])[0]) if 'slot' in qs else 0
+            if slot < 1 or slot > 3:
                 self.send_response(400); self.end_headers(); self.wfile.write(b'Invalid slot'); return
             route_path = os.path.join(SCRIPT_DIR, ROUTE_FILENAME_TEMPLATE.format(slot))
             try:
-                if os.path.exists(route_path): os.remove(route_path)
-                print(f"Deleted route slot {slot} (if existed)"); sys.stdout.flush()
+                if os.path.exists(route_path):
+                    os.remove(route_path)
+                print(f"Deleted route slot {slot} (if existed)")
+                sys.stdout.flush()
                 self.send_response(200); self.end_headers(); self.wfile.write(b'OK')
             except Exception as e:
                 print("Failed delete route:", e, file=sys.stderr); sys.stdout.flush()
@@ -380,17 +379,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_response(404); self.end_headers(); self.wfile.write(b'Not found')
 
     def do_GET(self):
-        parsed = urlparse(self.path); path = parsed.path; qs = parse_qs(parsed.query)
+        parsed = urlparse(self.path)
+        path = parsed.path
+        qs = parse_qs(parsed.query)
 
+        # serve latest image bytes from memory
         if path == '/image-live':
             with _image_lock:
-                b = _image_bytes; mime = _image_mime; ts = _image_ts
+                b = _image_bytes
+                mime = _image_mime
+                ts = _image_ts
             if not b:
-                self.send_response(204); self.end_headers(); return
+                # no image yet
+                self.send_response(204)
+                self.end_headers()
+                return
             try:
                 self.send_response(200)
                 self.send_header("Content-Type", mime or "application/octet-stream")
                 self.send_header("Content-Length", str(len(b)))
+                # disable caching
                 self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
                 self.end_headers()
                 self.wfile.write(b)
@@ -398,6 +406,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 pass
             return
 
+        # SSE: image stream notifications
         if path == '/image/stream':
             self.send_response(200)
             self.send_header('Content-Type', 'text/event-stream')
@@ -412,12 +421,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                             payload = _image_ts
                             msg = f"event: new-image\ndata: {payload}\n\n"
                             try:
-                                self.wfile.write(msg.encode('utf-8')); self.wfile.flush()
+                                self.wfile.write(msg.encode('utf-8'))
+                                self.wfile.flush()
                             except Exception:
                                 break
                         else:
                             try:
-                                self.wfile.write(b": ping\n\n"); self.wfile.flush()
+                                self.wfile.write(b": ping\n\n")
+                                self.wfile.flush()
                             except Exception:
                                 break
             except Exception:
@@ -425,33 +436,41 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path == '/route/load':
-            slot = int(qs.get('slot',[0])[0]) if 'slot' in qs else 0
-            if slot<1 or slot>3:
+            slot = int(qs.get('slot', [0])[0]) if 'slot' in qs else 0
+            if slot < 1 or slot > 3:
                 self.send_response(400); self.end_headers(); self.wfile.write(b'Invalid slot'); return
             route_path = os.path.join(SCRIPT_DIR, ROUTE_FILENAME_TEMPLATE.format(slot))
             if not os.path.exists(route_path):
                 self.send_response(404); self.end_headers(); self.wfile.write(b'Not found'); return
             try:
-                with open(route_path,'r',encoding='utf-8') as f: data=json.load(f)
-                self.send_response(200); self.send_header("Content-Type","application/json; charset=utf-8"); self.end_headers()
+                with open(route_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                self.send_response(200)
+                self.send_header("Content-Type","application/json; charset=utf-8")
+                self.end_headers()
                 self.wfile.write(json.dumps(data, ensure_ascii=False).encode('utf-8'))
             except Exception as e:
-                print("Failed load route:", e, file=sys.stderr); sys.stdout.flush(); self.send_response(500); self.end_headers(); self.wfile.write(b'Error loading')
+                print("Failed load route:", e, file=sys.stderr); sys.stdout.flush()
+                self.send_response(500); self.end_headers(); self.wfile.write(b'Error loading')
             return
 
         if path == '/route/meta':
-            meta={}
+            meta = {}
             for s in (1,2,3):
                 route_path = os.path.join(SCRIPT_DIR, ROUTE_FILENAME_TEMPLATE.format(s))
                 if os.path.exists(route_path):
                     try:
-                        with open(route_path,'r',encoding='utf-8') as f: data=json.load(f)
-                        meta[str(s)]=len(data.get('points',[]))
+                        with open(route_path, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                        pts = data.get('points', [])
+                        meta[str(s)] = len(pts)
                     except Exception:
-                        meta[str(s)]=0
+                        meta[str(s)] = 0
                 else:
-                    meta[str(s)]=0
-            self.send_response(200); self.send_header("Content-Type","application/json; charset=utf-8"); self.end_headers()
+                    meta[str(s)] = 0
+            self.send_response(200)
+            self.send_header("Content-Type","application/json; charset=utf-8")
+            self.end_headers()
             self.wfile.write(json.dumps(meta, ensure_ascii=False).encode('utf-8'))
             return
 
@@ -460,18 +479,33 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 data = _udp_latest.copy() if _udp_latest else None
             if not data:
                 self.send_response(204); self.end_headers(); return
-            self.send_response(200); self.send_header("Content-Type","application/json; charset=utf-8"); self.end_headers()
+            self.send_response(200)
+            self.send_header("Content-Type","application/json; charset=utf-8")
+            self.end_headers()
             self.wfile.write(json.dumps(data, ensure_ascii=False).encode('utf-8'))
             return
 
-        # serve index.html and other static files from script dir
+        # serve static files (index.html etc.)
         return http.server.SimpleHTTPRequestHandler.do_GET(self)
 
 # ---------- Utilities and startup ----------
 def find_free_port():
-    s = socket.socket(); s.bind((HOST,0)); addr, port = s.getsockname(); s.close(); return port
+    s = socket.socket()
+    s.bind((HOST, 0))
+    addr, port = s.getsockname()
+    s.close()
+    return port
 
 def start_mavlink_thread_or_exit():
+    try:
+        import importlib
+        spec = importlib.util.find_spec("pymavlink")
+        if spec is None:
+            print("ERROR: pymavlink not found. Install with: pip install pymavlink", file=sys.stderr)
+            sys.exit(1)
+    except Exception:
+        print("ERROR: failed to check pymavlink. Install with: pip install pymavlink", file=sys.stderr)
+        sys.exit(1)
     t = threading.Thread(target=mavlink_listener, args=(UDP_BIND_ADDR, UDP_PORT), daemon=True)
     t.start()
     print("Started MAVLink listener thread.")
@@ -484,7 +518,9 @@ def start_image_tcp_thread():
     return t
 
 def start_server_and_open_ui():
+    # serve from SCRIPT_DIR
     os.chdir(SCRIPT_DIR)
+
     port = find_free_port()
 
     def server_thread():
@@ -495,9 +531,12 @@ def start_server_and_open_ui():
                 daemon_threads = True
             httpd = ThreadingServer((HOST, port), Handler)
         httpd.allow_reuse_address = True
-        print(f"Serving HTTP on {HOST}:{port} (serving directory: {SCRIPT_DIR})"); sys.stdout.flush()
-        try: httpd.serve_forever()
-        except KeyboardInterrupt: pass
+        print(f"Serving HTTP on {HOST}:{port} (serving directory: {SCRIPT_DIR})")
+        sys.stdout.flush()
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            pass
 
     # start listeners
     start_mavlink_thread_or_exit()
@@ -509,15 +548,17 @@ def start_server_and_open_ui():
     url = f"http://{HOST}:{port}/index.html"
     try:
         import webview
-        window = webview.create_window("Карта (CartoDB) — MAVLink live", url, width=1200, height=800)
+        window = webview.create_window("Карта + live image", url, width=1800, height=1200)
         webview.start()
     except Exception as e:
-        print("pywebview unavailable or failed; opening default browser:", e, file=sys.stderr)
+        print("pywebview unavailable or failed to start; opening default browser. Error:", e, file=sys.stderr)
         webbrowser.open(url)
         try:
-            while True: t.join(1)
+            while True:
+                t.join(1)
         except KeyboardInterrupt:
-            print("Exit."); return
+            print("Exit.")
+            return
 
 if __name__ == "__main__":
     print("Script directory:", SCRIPT_DIR)

@@ -172,7 +172,9 @@ bool CameraV4L2::getFrame(uint8_t* &bufferReturn, int& n)
     }
 
     size_t copied = 0;
-    bufferReturn = new uint8_t[buf.bytesused];
+    if (buf.bytesused > 0)
+        bufferReturn = new uint8_t[buf.bytesused];
+        
     if (bufferReturn != nullptr) {
         // копируем в пользовательский буфер
         copied = buf.bytesused;
@@ -188,3 +190,30 @@ bool CameraV4L2::getFrame(uint8_t* &bufferReturn, int& n)
 
     return true;
 }
+
+/*
+Пример использования (включено в этот файл как комментарий):
+
+int main() {
+    CameraV4L2 cam("/dev/video0");
+    if (!cam.openDevice()) return 1;
+    if (!cam.initDevice()) return 1;
+    if (!cam.startCapturing()) return 1;
+
+    int size = cam.frameSize();
+    if (size <= 0) size = 1024*1024; // запасной размер
+    uint8_t *buf = (uint8_t*)malloc(size);
+    int n = 0;
+    if (cam.getFrame(buf, n)) {
+        // buf содержит n байт кадра (например MJPEG). Можно обработать дальше.
+        printf("Got frame %d bytes\n", n);
+    } else {
+        fprintf(stderr, "Failed to get frame\n");
+    }
+
+    free(buf);
+    cam.stopCapturing();
+    cam.closeDevice();
+    return 0;
+}
+*/
