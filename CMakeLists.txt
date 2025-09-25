@@ -19,6 +19,7 @@ set(SOURCES
     src/FlyPlaneData.cpp
     src/InterfaceUDP.cpp
     src/InterfaceTCP.cpp
+    src/CameraCapture.cpp
 )
 
 set(HEADERS
@@ -28,6 +29,7 @@ set(HEADERS
     include/FlyPlaneData.h
     include/InterfaceUDP.h
     include/InterfaceTCP.h
+    include/CameraCapture.h
     Mavlink_Lib/common/mavlink.h
     Mavlink_Lib/ardupilotmega/ardupilotmega.h
 )

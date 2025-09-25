@@ -5,6 +5,7 @@
 #include "FlyPlaneData.h"
 #include "InterfaceUDP.h"
 #include "InterfaceTCP.h"
+#include "CameraCapture.h"
 
 #include <chrono>
 #include <thread>
@@ -21,8 +22,6 @@ void sendMavlinkMessage(InterfaceUDP &sitl, const mavlink_message_t& msg);
 void Do_SetWayPoints(InterfaceUDP &sitl, WGS84Coord* coords, int count);
 
 void waitHeartBeat(InterfaceUDP &sitl);
-
-unsigned char* getImage(char* path);
 
 void sendImage(InterfaceTCPClient tmp);
 

@@ -133,33 +133,27 @@ void waitHeartBeat(InterfaceUDP &sitl)
     }
 }
 
-#include <fstream>
-
-unsigned char* getImage(char *filename, int& imageSize)
-{
-    std::ifstream file(filename, std::ios::binary);
-    if (!file) {
-        return nullptr;
-    }
-
-	// Определяем размер файла
-    file.seekg(0, std::ios::end);
-    imageSize = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    // Выделяем память и читаем данные
-    unsigned char* image = new unsigned char[imageSize];
-    file.read(reinterpret_cast<char*>(image), imageSize);
-
-	return image;
-}
-
 void sendImage(InterfaceTCPClient tmp)
 {
+    SimpleV4L2Capture camera;
+
+    if (!camera.openCamera() || !camera.setupCamera()) 
+    {
+        std::cerr << "Camera initialization failed" << std::endl;
+        exit(CAMERA_FAIL_CODE);
+    }
+    
 	while (true)
 	{
 		int n = 0;
-		unsigned char* image = getImage("drone.png", n);
+		uint8_t* image;
+        bool res = camera.captureSingleFrame(image, n);
+
+        if (!res)
+        {
+		    std::this_thread::sleep_for(std::chrono::seconds(1));
+            continue;
+        }
 
         unsigned char* data = new unsigned char[sizeof(int)];
         memcpy(data, &n, sizeof(int));
