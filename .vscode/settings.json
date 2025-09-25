@@ -68,7 +68,8 @@
         "numeric": "cpp",
         "numbers": "cpp",
         "typeindex": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "cerrno": "cpp"
     },
     "files.exclude": {
         "**/*.rpyc": true,

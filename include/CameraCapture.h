@@ -1,27 +1,42 @@
 #ifndef CAMERA_CAPTURE_H
 #define CAMERA_CAPTURE_H
 
-#include <iostream>
-#include <fstream>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/select.h>
 #include <linux/videodev2.h>
+#include <cerrno>
 #include <cstring>
-#include <csignal>
+#include <cstdio>
+#include <cstdlib>
+#include <vector>
+#include <string>
 
-class SimpleV4L2Capture {
+struct BufferMMAP {
+    void* start = nullptr;
+    size_t length = 0;
+};
+
+class CameraV4L2 {
 private:
     int fd;
-    
-public:
-    bool openCamera(const char* device = "/dev/video0");
-    bool setupCamera();
+    struct v4l2_format fmt{};
+    std::string devPath;
+    std::vector<BufferMMAP> buffers;
 
-    bool captureSingleFrame(uint8_t *bufferRet, int& n);
-    
-    ~SimpleV4L2Capture();
+public:
+    explicit CameraV4L2(const char* device = "/dev/video0");
+    ~CameraV4L2();
+
+    bool openDevice();
+    bool initDevice();
+    bool startCapturing();
+    bool stopCapturing();
+    void closeDevice();
+    int frameSize() const;
+    bool getFrame(uint8_t* &bufferReturn, int& n);
 };
 
 

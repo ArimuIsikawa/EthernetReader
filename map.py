@@ -134,7 +134,7 @@ def image_tcp_listener(bind_addr: str, port: int):
             print("Image TCP accept error:", e, file=sys.stderr)
             time.sleep(0.5)
             continue
-        with conn:
+        while conn != -1:
             try:
                 print(f"Image TCP connection from {addr}")
                 sys.stdout.flush()
@@ -144,6 +144,8 @@ def image_tcp_listener(bind_addr: str, port: int):
                 tmp.extend(chunk)
                 if not tmp:
                     print("Image TCP: no data received from", addr)
+                    if (tmp == b''):
+                        conn = -1
                     continue
                 b = bytes(tmp)
                 img_type = imghdr.what(None, h=b)
@@ -162,15 +164,10 @@ def image_tcp_listener(bind_addr: str, port: int):
                     _image_mime = mime
                     _image_ts = iso_ts
                     _image_cond.notify_all()
-                print(f"Received image ({len(b)} bytes), type={img_type}, mime={mime}, ts={iso_ts}")
-                sys.stdout.flush()
             except Exception as e:
                 print("Error handling image TCP connection:", e, file=sys.stderr)
-            finally:
-                try:
-                    conn.close()
-                except Exception:
-                    pass
+                conn.close()
+                conn = -1
 
 class WGS84Coord:
     def __init__(self, lat: float = 0.0, lon: float = 0.0, alt: float = 0.0):

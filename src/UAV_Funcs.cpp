@@ -135,25 +135,21 @@ void waitHeartBeat(InterfaceUDP &sitl)
 
 void sendImage(InterfaceTCPClient tmp)
 {
-    SimpleV4L2Capture camera;
-
-    if (!camera.openCamera() || !camera.setupCamera()) 
+    CameraV4L2 cam;
+    if (!cam.openDevice() || !cam.initDevice() || !cam.startCapturing()) 
     {
-        std::cerr << "Camera initialization failed" << std::endl;
-        exit(CAMERA_FAIL_CODE);
+        std::cerr << "Video Fail" << std::endl;
+        return;
     }
-    
+
 	while (true)
 	{
+        int size = cam.frameSize();
+        if (size <= 0) size = 1024*1024; // запасной размер
 		int n = 0;
 		uint8_t* image;
-        bool res = camera.captureSingleFrame(image, n);
 
-        if (!res)
-        {
-		    std::this_thread::sleep_for(std::chrono::seconds(1));
-            continue;
-        }
+        bool res = cam.getFrame(image, n);
 
         unsigned char* data = new unsigned char[sizeof(int)];
         memcpy(data, &n, sizeof(int));
@@ -163,7 +159,7 @@ void sendImage(InterfaceTCPClient tmp)
 
         delete[] data;
         delete[] image;
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 }
 
