@@ -171,11 +171,11 @@ void sendImage(InterfaceTCPClient tmp)
 void recvCoords(InterfaceTCPServer tmp)
 {
     InterfaceUDP Autopilot(MAVLINK_IP, MAVLINK_PORT);
-    waitHeartBeat(Autopilot);
+    //waitHeartBeat(Autopilot);
 
     mavlink_message_t msg;
 
-    #ifdef __linux__
+    #ifndef __linux__
         mavlink_msg_command_long_pack(255, 191, &msg, 1, 1, MAV_CMD_COMPONENT_ARM_DISARM, 0, 1, 0, 0, 0, 0, 0, 0);
         sendMavlinkMessage(Autopilot, msg);
         usleep(1000*1000);
@@ -196,6 +196,7 @@ void recvCoords(InterfaceTCPServer tmp)
 
         if (length > 0)
         {
+            std::cout << "Getted\n";
             Do_SetWayPoints(Autopilot, Data.getCoords(), Data.getPointCount());
         }
 
@@ -205,8 +206,8 @@ void recvCoords(InterfaceTCPServer tmp)
 
 int UAV_func()
 {
-	InterfaceTCPServer CoordsRecv(TEST_IP, TEST_PORT + 1);
-	InterfaceTCPClient ImageSend(TEST_IP, TEST_PORT);
+	InterfaceTCPServer CoordsRecv("0.0.0.0", TEST_PORT + 1);
+	InterfaceTCPClient ImageSend(MAIN_IP, MAIN_PORT);
 
     std::thread sendThread(sendImage, ImageSend);
     std::thread recvThread(recvCoords,  CoordsRecv);
