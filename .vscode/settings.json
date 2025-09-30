@@ -69,7 +69,14 @@
         "numbers": "cpp",
         "typeindex": "cpp",
         "variant": "cpp",
-        "cerrno": "cpp"
+        "cerrno": "cpp",
+        "csignal": "cpp",
+        "strstream": "cpp",
+        "list": "cpp",
+        "unordered_set": "cpp",
+        "future": "cpp",
+        "iomanip": "cpp",
+        "cfenv": "cpp"
     },
     "files.exclude": {
         "**/*.rpyc": true,

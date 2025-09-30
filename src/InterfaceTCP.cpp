@@ -74,8 +74,11 @@ int InterfaceTCPServer::readFlyPlaneData(FlyPlaneData &data)
         data.DeSerialization(received_data, bytesReceived);
         
         delete[] received_data;
+        
+        close(client_fd);
+        client_fd = -1;
     }
-    else
+    else if (bytesReceived < 0)
     {
         close(client_fd);
         client_fd = -1;

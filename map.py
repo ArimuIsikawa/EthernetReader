@@ -19,9 +19,9 @@ HOST = "127.0.0.1"
 ROUTE_FILENAME_TEMPLATE = "route_{}.json"  # 1..3
 
 # MAVLink UDP port
-DEFAULT_UDP_PORT = 14559
+DEFAULT_UDP_PORT = 14558
 UDP_PORT = int(os.environ.get("UDP_PORT", str(DEFAULT_UDP_PORT)))
-UDP_BIND_ADDR = "0.0.0.0"
+UDP_BIND_ADDR = "196.10.10.138"
 
 # TCP image receiver port (env override)
 DEFAULT_IMAGE_TCP_PORT = 14519
@@ -151,6 +151,7 @@ def image_tcp_listener(bind_addr: str, port: int):
                     _image_mime = mime
                     _image_ts = iso_ts
                     _image_cond.notify_all()
+                time.sleep(0.01)
             except Exception as e:
                 print("Error handling image TCP connection:", e, file=sys.stderr)
                 conn.close()
@@ -319,7 +320,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 plane_data.set_coords(coords)
                 serialized = plane_data.serialization()
 
-                res = send_serialized_data_tcp(HOST, 14520, serialized)
+                res = send_serialized_data_tcp("196.10.10.135", DEFAULT_IMAGE_TCP_PORT + 1, serialized)
                 if res == True:
                     print("Coords sended")
                 sys.stdout.flush()
