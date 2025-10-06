@@ -135,8 +135,11 @@ void waitHeartBeat(InterfaceUDP &sitl)
 
 void sendImage(InterfaceTCPClient tmp)
 {
+    while (!tmp.ConnectToServer())
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
     CameraV4L2 cam;
-    if (!cam.openDevice() || !cam.initDevice() || !cam.startCapturing()) 
+    if (!cam.openDevice() || !cam.initDevice(N_HD) || !cam.startCapturing()) 
     {
         std::cerr << "Video Fail" << std::endl;
         return;
@@ -164,7 +167,7 @@ void sendImage(InterfaceTCPClient tmp)
             image = nullptr;
         }
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / 30));
 	}
 }
 

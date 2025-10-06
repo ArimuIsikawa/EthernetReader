@@ -20,7 +20,7 @@ bool CameraV4L2::openDevice()
     return true;
 }
 
-bool CameraV4L2::initDevice() 
+bool CameraV4L2::initDevice(uint32_t width, uint32_t height)
 {
     if (fd < 0) return false;
 
@@ -30,6 +30,16 @@ bool CameraV4L2::initDevice()
     if (ioctl(fd, VIDIOC_G_FMT, &fmt) < 0) {
         perror("VIDIOC_G_FMT");
         return false;
+    }
+
+    // Устанавливаем новый размер
+    fmt.fmt.pix.width = width;
+    fmt.fmt.pix.height = height;
+    
+    // Пытаемся установить формат
+    if (ioctl(fd, VIDIOC_S_FMT, &fmt) == -1) {
+        perror("Setting format failed");
+        return -1;
     }
 
     // Запрос mmap буферов

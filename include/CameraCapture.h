@@ -31,7 +31,7 @@ public:
     ~CameraV4L2();
 
     bool openDevice();
-    bool initDevice();
+    bool initDevice(uint32_t width, uint32_t height);
     bool startCapturing();
     bool stopCapturing();
     void closeDevice();
