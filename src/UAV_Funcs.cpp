@@ -148,8 +148,8 @@ void sendImage(InterfaceTCPClient tmp)
     int n = 0;
     uint8_t* image;
 
-	while (true)
-	{
+    while (true)
+    {
         bool res = cam.getFrame(image, n);
 
         if (n > 0)
@@ -167,8 +167,8 @@ void sendImage(InterfaceTCPClient tmp)
             image = nullptr;
         }
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000 / 30));
-	}
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000 / 30));
+    }
 }
 
 void recvCoords(InterfaceTCPServer tmp)
@@ -193,8 +193,8 @@ void recvCoords(InterfaceTCPServer tmp)
 
 int UAV_func()
 {
-	InterfaceTCPServer CoordsRecv("0.0.0.0", TEST_PORT + 1);
-	InterfaceTCPClient ImageSend(MAIN_IP, MAIN_PORT);
+    InterfaceTCPServer CoordsRecv("0.0.0.0", TEST_PORT + 1);
+    InterfaceTCPClient ImageSend(MAIN_IP, MAIN_PORT);
 
     std::thread sendThread(sendImage, ImageSend);
     std::thread recvThread(recvCoords,  CoordsRecv);

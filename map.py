@@ -21,7 +21,7 @@ ROUTE_FILENAME_TEMPLATE = "route_{}.json"  # 1..3
 # MAVLink UDP port
 DEFAULT_UDP_PORT = 14558
 UDP_PORT = int(os.environ.get("UDP_PORT", str(DEFAULT_UDP_PORT)))
-UDP_BIND_ADDR = "196.10.10.138"
+UDP_BIND_ADDR = "10.135.72.184"
 
 # TCP image receiver port (env override)
 DEFAULT_IMAGE_TCP_PORT = 14519
@@ -102,6 +102,15 @@ def mavlink_listener(bind_addr: str, port: int):
                     "type": mtype
                 }
 
+def recv_exact(sock, size):
+    data = b''
+    while len(data) < size:
+        chunk = sock.recv(size - len(data))
+        if not chunk:
+            raise ConnectionError("Connection closed")
+        data += chunk
+    return data
+
 def image_tcp_listener(bind_addr: str, port: int):
     global _image_bytes, _image_mime, _image_ts
     server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -116,18 +125,24 @@ def image_tcp_listener(bind_addr: str, port: int):
     sys.stdout.flush()
     while True:
         try:
+            server_sock.settimeout(1)
             conn, addr = server_sock.accept()
+            server_sock.settimeout(5)
+            print(f"Image TCP connection from {addr}")
+            sys.stdout.flush()
         except Exception as e:
             print("Image TCP accept error:", e, file=sys.stderr)
             time.sleep(0.5)
             continue
         while conn != -1:
             try:
-                print(f"Image TCP connection from {addr}")
-                sys.stdout.flush()
                 tmp = bytearray()
-                count = int.from_bytes(conn.recv(4), 'little')
-                chunk = conn.recv(count)
+                count = int.from_bytes(recv_exact(conn, 4), 'little')
+                chunk = recv_exact(conn, count)
+
+                if (len(chunk) != count):
+                    continue
+
                 tmp.extend(chunk)
                 if not tmp:
                     print("Image TCP: no data received from", addr)
@@ -151,7 +166,7 @@ def image_tcp_listener(bind_addr: str, port: int):
                     _image_mime = mime
                     _image_ts = iso_ts
                     _image_cond.notify_all()
-                time.sleep(0.01)
+
             except Exception as e:
                 print("Error handling image TCP connection:", e, file=sys.stderr)
                 conn.close()
