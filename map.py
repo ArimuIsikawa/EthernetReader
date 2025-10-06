@@ -47,39 +47,23 @@ _image_ts = None
 
 def mavlink_listener(bind_addr: str, port: int):
     global _udp_latest
-    try:
-        from pymavlink import mavutil
-    except Exception as e:
-        print("ERROR: pymavlink not available. Install it with: pip install pymavlink", file=sys.stderr)
-        raise
+    from pymavlink import mavutil
 
     conn_str = f'udp:{bind_addr}:{port}'
-    try:
-        print("Opening MAVLink UDP on", conn_str)
-        sys.stdout.flush()
-        conn = mavutil.mavlink_connection(conn_str, source_system=255)
-    except Exception as e:
-        print("Failed to open MAVLink UDP:", e, file=sys.stderr)
-        raise
+    print("Opening MAVLink UDP on", conn_str)
+    sys.stdout.flush()
+    conn = mavutil.mavlink_connection(conn_str, source_system=255)
 
     print("MAVLink listener started (waiting for messages)...")
     sys.stdout.flush()
     while True:
-        try:
-            # wait for message (timeout to allow graceful checks)
-            msg = conn.recv_match(timeout=2) # type: ignore
-        except Exception as e:
-            print("MAVLink recv error:", e, file=sys.stderr)
-            time.sleep(0.5)
-            continue
+        # wait for message (timeout to allow graceful checks)
+        msg = conn.recv_match(timeout=2) # type: ignore
 
         if msg is None:
             continue
 
-        try:
-            mtype = msg.get_type()
-        except Exception:
-            mtype = None
+        mtype = msg.get_type()
 
         lat = None
         lon = None
@@ -107,7 +91,7 @@ def recv_exact(sock, size):
     while len(data) < size:
         chunk = sock.recv(size - len(data))
         if not chunk:
-            raise ConnectionError("Connection closed")
+            return b""
         data += chunk
     return data
 
@@ -115,62 +99,57 @@ def image_tcp_listener(bind_addr: str, port: int):
     global _image_bytes, _image_mime, _image_ts
     server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    try:
-        server_sock.bind((bind_addr, port))
-        server_sock.listen(5)
-    except Exception as e:
-        print(f"Failed to bind image TCP {bind_addr}:{port}: {e}", file=sys.stderr)
-        return
+    server_sock.bind((bind_addr, port))
+    server_sock.listen(5)
     print(f"Image TCP listener bound to {bind_addr}:{port}")
     sys.stdout.flush()
     while True:
+        server_sock.settimeout(1)
+
         try:
-            server_sock.settimeout(1)
             conn, addr = server_sock.accept()
-            server_sock.settimeout(5)
-            print(f"Image TCP connection from {addr}")
-            sys.stdout.flush()
-        except Exception as e:
-            print("Image TCP accept error:", e, file=sys.stderr)
-            time.sleep(0.5)
+        except:
             continue
+
+        server_sock.settimeout(5)
+        print(f"Image TCP connection from {addr}")
+        sys.stdout.flush()
         while conn != -1:
-            try:
-                tmp = bytearray()
-                count = int.from_bytes(recv_exact(conn, 4), 'little')
-                chunk = recv_exact(conn, count)
+            tmp = bytearray()
 
-                if (len(chunk) != count):
-                    continue
+            count = int.from_bytes(recv_exact(conn, 4), 'little')
+            chunk = recv_exact(conn, count)
 
-                tmp.extend(chunk)
-                if not tmp:
-                    print("Image TCP: no data received from", addr)
-                    if (tmp == b''):
-                        conn = -1
-                    continue
-                b = bytes(tmp)
-                img_type = imghdr.what(None, h=b)
-                mime = None
-                if img_type == 'png':
-                    mime = 'image/png'
-                elif img_type in ('jpeg', 'jpg'):
-                    mime = 'image/jpeg'
-                elif img_type == 'gif':
-                    mime = 'image/gif'
-                else:
-                    mime = 'application/octet-stream'
-                iso_ts = datetime.datetime.utcnow().isoformat(timespec='milliseconds') + 'Z'
-                with _image_cond:
-                    _image_bytes = b
-                    _image_mime = mime
-                    _image_ts = iso_ts
-                    _image_cond.notify_all()
-
-            except Exception as e:
-                print("Error handling image TCP connection:", e, file=sys.stderr)
-                conn.close()
+            if (count == -1) or (chunk == b""):
                 conn = -1
+                continue
+
+            if (len(chunk) != count):
+                continue
+
+            tmp.extend(chunk)
+            if not tmp:
+                print("Image TCP: no data received from", addr)
+                if (tmp == b''):
+                    conn = -1
+                continue
+            b = bytes(tmp)
+            img_type = imghdr.what(None, h=b)
+            mime = None
+            if img_type == 'png':
+                mime = 'image/png'
+            elif img_type in ('jpeg', 'jpg'):
+                mime = 'image/jpeg'
+            elif img_type == 'gif':
+                mime = 'image/gif'
+            else:
+                mime = 'application/octet-stream'
+            iso_ts = datetime.datetime.utcnow().isoformat(timespec='milliseconds') + 'Z'
+            with _image_cond:
+                _image_bytes = b
+                _image_mime = mime
+                _image_ts = iso_ts
+                _image_cond.notify_all()
 
 class WGS84Coord:
     def __init__(self, lat: float = 0.0, lon: float = 0.0, alt: float = 0.0):
@@ -270,30 +249,19 @@ class FlyPlaneData:
         return True
 
 def send_serialized_data_tcp(host: str, port: int, serialized_data: bytearray) -> bool:
-    try:
-        # Создаем TCP сокет
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            # Устанавливаем таймаут на соединение и отправку (5 секунд)
-            sock.settimeout(5.0)
-            
-            # Подключаемся к серверу
-            sock.connect((host, port))
-            
-            # Отправляем сами данные
-            sock.sendall(serialized_data)
-            
-            print(f"Данные успешно отправлены: {serialized_data} байт")
-            return True
-            
-    except socket.timeout:
-        print("Таймаут соединения")
-        return False
-    except ConnectionRefusedError:
-        print("Соединение отклонено")
-        return False
-    except Exception as e:
-        print(f"Ошибка при отправке данных: {e}")
-        return False
+    # Создаем TCP сокет
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        # Устанавливаем таймаут на соединение и отправку (5 секунд)
+        sock.settimeout(5.0)
+        
+        # Подключаемся к серверу
+        sock.connect((host, port))
+        
+        # Отправляем сами данные
+        sock.sendall(serialized_data)
+        
+        print(f"Данные успешно отправлены: {len(serialized_data)} байт")
+        return True
 
 # ---------- HTTP handler ----------
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -305,54 +273,42 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if path == '/send':
             length = int(self.headers.get('Content-Length', 0))
             raw = self.rfile.read(length) if length > 0 else b''
-            try:
-                data = json.loads(raw.decode('utf-8'))
-            except Exception as e:
-                self.send_response(400); self.end_headers()
-                self.wfile.write(b'Invalid JSON: ' + str(e).encode('utf-8')); return
-            try:
-                print(json.dumps(data, ensure_ascii=False, indent=2))
-                sys.stdout.flush()
-            except Exception:
-                pass
+            data = json.loads(raw.decode('utf-8'))
+            
+            print(json.dumps(data, ensure_ascii=False, indent=2))
+            sys.stdout.flush()
+            
             # write coords.txt
-            try:
-                points = data.get('points', [])
-                coords = []
-                for p in points:
-                    lat = p.get('lat', None)
-                    lon = p.get('lon', None)
-                    if lat is None and 'y' in p:
-                        lat = p.get('y')
-                    if lon is None and 'x' in p:
-                        lon = p.get('x')
-                    try:
-                        latf = float(lat); lonf = float(lon)
-                        coords.append(WGS84Coord(latf, lonf, 100))
-                    except Exception:
-                        coords.append(WGS84Coord(lat, lon, 100))
-                plane_data = FlyPlaneData()
-                plane_data.set_coords(coords)
-                serialized = plane_data.serialization()
+            points = data.get('points', [])
+            coords = []
+            for p in points:
+                lat = p.get('lat', None)
+                lon = p.get('lon', None)
+                if lat is None and 'y' in p:
+                    lat = p.get('y')
+                if lon is None and 'x' in p:
+                    lon = p.get('x')
+                try:
+                    latf = float(lat); lonf = float(lon)
+                    coords.append(WGS84Coord(latf, lonf, 100))
+                except Exception:
+                    coords.append(WGS84Coord(lat, lon, 100))
+            plane_data = FlyPlaneData()
+            plane_data.set_coords(coords)
+            serialized = plane_data.serialization()
 
-                res = send_serialized_data_tcp("196.10.10.135", DEFAULT_IMAGE_TCP_PORT + 1, serialized)
-                if res == True:
-                    print("Coords sended")
-                sys.stdout.flush()
-            except Exception as e:
-                print("Error writing coords file:", e, file=sys.stderr); sys.stdout.flush()
-                self.send_response(500); self.end_headers(); self.wfile.write(b'Failed to write coords file'); return
+            res = send_serialized_data_tcp("196.10.10.135", DEFAULT_IMAGE_TCP_PORT + 1, serialized)
+            if res == True:
+                print("Coords sended")
+            sys.stdout.flush()
+            
             self.send_response(200); self.send_header("Content-Type","text/plain; charset=utf-8"); self.end_headers(); self.wfile.write(b'OK')
             return
 
         if path == '/route/save':
             length = int(self.headers.get('Content-Length', 0))
             raw = self.rfile.read(length) if length > 0 else b''
-            try:
-                data = json.loads(raw.decode('utf-8'))
-            except Exception as e:
-                self.send_response(400); self.end_headers()
-                self.wfile.write(b'Invalid JSON: ' + str(e).encode('utf-8')); return
+            data = json.loads(raw.decode('utf-8'))
             slot = int(qs.get('slot', [0])[0]) if 'slot' in qs else 0
             if slot < 1 or slot > 3:
                 self.send_response(400); self.end_headers(); self.wfile.write(b'Invalid slot'); return
@@ -360,20 +316,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             color = data.get('color', ROUTE_COLORS[slot-1] if 1 <= slot <=3 else ROUTE_COLORS[0])
             cleaned = []
             for p in points:
-                try:
-                    cleaned.append({'lat': float(p['lat']), 'lon': float(p['lon'])})
-                except Exception:
-                    pass
+                cleaned.append({'lat': float(p['lat']), 'lon': float(p['lon'])})
             route_path = os.path.join(SCRIPT_DIR, ROUTE_FILENAME_TEMPLATE.format(slot))
-            try:
-                with open(route_path, 'w', encoding='utf-8') as f:
-                    json.dump({'points': cleaned, 'color': color}, f, ensure_ascii=False, indent=2)
-                print(f"Saved route slot {slot} -> {route_path}")
-                sys.stdout.flush()
-                self.send_response(200); self.end_headers(); self.wfile.write(b'OK')
-            except Exception as e:
-                print("Failed save route:", e, file=sys.stderr); sys.stdout.flush()
-                self.send_response(500); self.end_headers(); self.wfile.write(b'Error saving')
+            with open(route_path, 'w', encoding='utf-8') as f:
+                json.dump({'points': cleaned, 'color': color}, f, ensure_ascii=False, indent=2)
+            print(f"Saved route slot {slot} -> {route_path}")
+            sys.stdout.flush()
+            self.send_response(200); self.end_headers(); self.wfile.write(b'OK')
             return
 
         if path == '/route/delete':
@@ -381,15 +330,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if slot < 1 or slot > 3:
                 self.send_response(400); self.end_headers(); self.wfile.write(b'Invalid slot'); return
             route_path = os.path.join(SCRIPT_DIR, ROUTE_FILENAME_TEMPLATE.format(slot))
-            try:
-                if os.path.exists(route_path):
-                    os.remove(route_path)
-                print(f"Deleted route slot {slot} (if existed)")
-                sys.stdout.flush()
-                self.send_response(200); self.end_headers(); self.wfile.write(b'OK')
-            except Exception as e:
-                print("Failed delete route:", e, file=sys.stderr); sys.stdout.flush()
-                self.send_response(500); self.end_headers(); self.wfile.write(b'Error deleting')
+            if os.path.exists(route_path):
+                os.remove(route_path)
+            print(f"Deleted route slot {slot} (if existed)")
+            sys.stdout.flush()
+            self.send_response(200); self.end_headers(); self.wfile.write(b'OK')
             return
 
         self.send_response(404); self.end_headers(); self.wfile.write(b'Not found')
@@ -410,16 +355,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_response(204)
                 self.end_headers()
                 return
-            try:
-                self.send_response(200)
-                self.send_header("Content-Type", mime or "application/octet-stream")
-                self.send_header("Content-Length", str(len(b)))
-                # disable caching
-                self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
-                self.end_headers()
-                self.wfile.write(b)
-            except BrokenPipeError:
-                pass
+            self.send_response(200)
+            self.send_header("Content-Type", mime or "application/octet-stream")
+            self.send_header("Content-Length", str(len(b)))
+            # disable caching
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+            self.end_headers()
+            self.wfile.write(b)
             return
 
         # SSE: image stream notifications
@@ -429,26 +371,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Cache-Control', 'no-cache')
             self.send_header('Connection', 'keep-alive')
             self.end_headers()
-            try:
-                while True:
-                    with _image_cond:
-                        _image_cond.wait(timeout=30.0)
-                        if _image_ts:
-                            payload = _image_ts
-                            msg = f"event: new-image\ndata: {payload}\n\n"
-                            try:
-                                self.wfile.write(msg.encode('utf-8'))
-                                self.wfile.flush()
-                            except Exception:
-                                break
-                        else:
-                            try:
-                                self.wfile.write(b": ping\n\n")
-                                self.wfile.flush()
-                            except Exception:
-                                break
-            except Exception:
-                pass
+            while True:
+                with _image_cond:
+                    _image_cond.wait(timeout=30.0)
+                    if _image_ts:
+                        payload = _image_ts
+                        msg = f"event: new-image\ndata: {payload}\n\n"
+                        self.wfile.write(msg.encode('utf-8'))
+                        self.wfile.flush()
+                    else:
+                        self.wfile.write(b": ping\n\n")
+                        self.wfile.flush()
             return
 
         if path == '/route/load':
@@ -458,16 +391,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             route_path = os.path.join(SCRIPT_DIR, ROUTE_FILENAME_TEMPLATE.format(slot))
             if not os.path.exists(route_path):
                 self.send_response(404); self.end_headers(); self.wfile.write(b'Not found'); return
-            try:
-                with open(route_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                self.send_response(200)
-                self.send_header("Content-Type","application/json; charset=utf-8")
-                self.end_headers()
-                self.wfile.write(json.dumps(data, ensure_ascii=False).encode('utf-8'))
-            except Exception as e:
-                print("Failed load route:", e, file=sys.stderr); sys.stdout.flush()
-                self.send_response(500); self.end_headers(); self.wfile.write(b'Error loading')
+            with open(route_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            self.send_response(200)
+            self.send_header("Content-Type","application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(data, ensure_ascii=False).encode('utf-8'))
             return
 
         if path == '/route/meta':
@@ -475,13 +404,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             for s in (1,2,3):
                 route_path = os.path.join(SCRIPT_DIR, ROUTE_FILENAME_TEMPLATE.format(s))
                 if os.path.exists(route_path):
-                    try:
-                        with open(route_path, 'r', encoding='utf-8') as f:
-                            data = json.load(f)
-                        pts = data.get('points', [])
-                        meta[str(s)] = len(pts)
-                    except Exception:
-                        meta[str(s)] = 0
+                    with open(route_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    pts = data.get('points', [])
+                    meta[str(s)] = len(pts)
                 else:
                     meta[str(s)] = 0
             self.send_response(200)
@@ -513,14 +439,10 @@ def find_free_port():
     return port
 
 def start_mavlink_thread_or_exit():
-    try:
-        import importlib
-        spec = importlib.util.find_spec("pymavlink")
-        if spec is None:
-            print("ERROR: pymavlink not found. Install with: pip install pymavlink", file=sys.stderr)
-            sys.exit(1)
-    except Exception:
-        print("ERROR: failed to check pymavlink. Install with: pip install pymavlink", file=sys.stderr)
+    import importlib
+    spec = importlib.util.find_spec("pymavlink")
+    if spec is None:
+        print("ERROR: pymavlink not found. Install with: pip install pymavlink", file=sys.stderr)
         sys.exit(1)
     t = threading.Thread(target=mavlink_listener, args=(UDP_BIND_ADDR, UDP_PORT), daemon=True)
     t.start()
@@ -540,19 +462,13 @@ def start_server_and_open_ui():
     port = find_free_port()
 
     def server_thread():
-        try:
-            httpd = http.server.ThreadingHTTPServer((HOST, port), Handler)
-        except AttributeError:
-            class ThreadingServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
-                daemon_threads = True
-            httpd = ThreadingServer((HOST, port), Handler)
+        class ThreadingServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+            daemon_threads = True
+        httpd = ThreadingServer((HOST, port), Handler)
         httpd.allow_reuse_address = True
         print(f"Serving HTTP on {HOST}:{port} (serving directory: {SCRIPT_DIR})")
         sys.stdout.flush()
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            pass
+        httpd.serve_forever()
 
     # start listeners
     start_mavlink_thread_or_exit()
@@ -569,12 +485,7 @@ def start_server_and_open_ui():
     except Exception as e:
         print("pywebview unavailable or failed to start; opening default browser. Error:", e, file=sys.stderr)
         webbrowser.open(url)
-        try:
-            while True:
-                t.join(1)
-        except KeyboardInterrupt:
-            print("Exit.")
-            return
+        t.join()
 
 if __name__ == "__main__":
     print("Script directory:", SCRIPT_DIR)
