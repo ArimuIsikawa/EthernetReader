@@ -167,7 +167,7 @@ void sendImage(InterfaceTCPClient tmp)
             image = nullptr;
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000 / 30));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000 / 25));
     }
 }
 

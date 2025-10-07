@@ -21,12 +21,13 @@ ROUTE_FILENAME_TEMPLATE = "route_{}.json"  # 1..3
 # MAVLink UDP port
 DEFAULT_UDP_PORT = 14558
 UDP_PORT = int(os.environ.get("UDP_PORT", str(DEFAULT_UDP_PORT)))
-UDP_BIND_ADDR = "10.135.72.184"
+UDP_BIND_ADDR = "172.27.208.123"
 
 # TCP image receiver port (env override)
 DEFAULT_IMAGE_TCP_PORT = 14519
 IMAGE_TCP_PORT = int(os.environ.get("IMAGE_TCP_PORT", str(DEFAULT_IMAGE_TCP_PORT)))
 IMAGE_TCP_BIND = "0.0.0.0"
+COORD_TCP_BIND = "172.27.94.168"
 
 # Directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -297,7 +298,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             plane_data.set_coords(coords)
             serialized = plane_data.serialization()
 
-            res = send_serialized_data_tcp("196.10.10.135", DEFAULT_IMAGE_TCP_PORT + 1, serialized)
+            res = send_serialized_data_tcp(COORD_TCP_BIND, DEFAULT_IMAGE_TCP_PORT + 1, serialized)
             if res == True:
                 print("Coords sended")
             sys.stdout.flush()

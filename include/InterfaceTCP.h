@@ -39,7 +39,7 @@ public:
 	~InterfaceTCPClient();
 
     int sendData(unsigned char* data, size_t dataSize);
-    int ConnectToServer();
+    bool ConnectToServer();
     int sendFlyPlaneData(FlyPlaneData& data);
 };
 

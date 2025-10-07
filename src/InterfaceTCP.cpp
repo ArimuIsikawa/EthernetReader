@@ -93,8 +93,6 @@ InterfaceTCPClient::InterfaceTCPClient(const char *ip, const int port)
 {
     IP = ip;
     PORT = port;
-
-    ConnectToServer();
 }
 
 InterfaceTCPClient::~InterfaceTCPClient()
@@ -110,7 +108,7 @@ int InterfaceTCPClient::sendData(unsigned char *data, size_t dataSize)
             break;
 
         if (sock <= 0)
-            sock = ConnectToServer();
+            ConnectToServer();
         else
             usleep(1*100*1000);
     }
@@ -126,12 +124,12 @@ int InterfaceTCPClient::sendData(unsigned char *data, size_t dataSize)
     }
 }
 
-int InterfaceTCPClient::ConnectToServer()
+bool InterfaceTCPClient::ConnectToServer()
 {
     // Создание сокета
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("Socket creation error");
-        return -1;
+        return false;
     }
     
     serv_addr.sin_family = AF_INET;
@@ -141,18 +139,20 @@ int InterfaceTCPClient::ConnectToServer()
     if (inet_pton(AF_INET, IP, &serv_addr.sin_addr) <= 0) {
         perror("Invalid address/ Address not supported");
         close(sock);
-        return -1;
+        sock = -1;
+        return false;
     }
     
     // Подключение к серверу
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
         //perror("Connection Failed");
         close(sock);
-        return -1;
+        sock = -1;
+        return false;
     }
     
     printf("Connected to server\n");
-    return sock;
+    return true;
 }
 
 int InterfaceTCPClient::sendFlyPlaneData(FlyPlaneData& data)
