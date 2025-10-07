@@ -1,7 +1,7 @@
 #ifndef FLY_DEFINES_H
 #define FLY_DEFINES_H
 
-#define MAIN_IP			 "196.10.10.138"
+#define MAIN_IP			 "172.27.208.123"
 #define MAIN_PORT		 14519
 
 #define TEST_IP			 "127.0.0.1"
